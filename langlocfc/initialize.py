@@ -271,7 +271,7 @@ if __name__ == '__main__':
                 cat = parse_cfg(cat_path)
                 runs = cat['runs']
                 if isinstance(runs, str):
-                    runs = [runs]
+                    runs = runs.split()
                 runs = [int(x) for x in runs]
                 if model_name in NONLINGUISTIC and NONLINGUISTIC[model_name]:
                     for run in runs:
@@ -304,7 +304,7 @@ if __name__ == '__main__':
                             cat = parse_cfg(cat_path)
                             runs = cat['runs']
                             if isinstance(runs, str):
-                                runs = [runs]
+                                runs = runs.split()
                             runs = [int(x) for x in runs]
                             if model_name in NONLINGUISTIC and NONLINGUISTIC[model_name]:
                                 for run in runs:
