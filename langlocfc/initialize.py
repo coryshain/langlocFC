@@ -476,6 +476,8 @@ if __name__ == '__main__':
             # Fill in any missing contrasts that are available from other sessions
             if participant_id in contrasts_by_participant:
                 for contrast in contrasts_by_participant[participant_id]:
+                    if 'evaluation_atlases' not in _config['evaluate']['main']:
+                        _config['evaluate']['main']['evaluation_atlases'] = {}
                     if contrast not in _config['evaluate']['main']['evaluation_atlases']:
                         _config['evaluate']['main']['evaluation_atlases'][contrast] = contrasts_by_participant[participant_id][contrast]
             config_dir = os.path.join(args.config_dir, config_name)
