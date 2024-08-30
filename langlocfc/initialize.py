@@ -237,10 +237,6 @@ if __name__ == '__main__':
         if not found:
             s += 1
             continue
-        # TODO: Delete this check after tests are passed
-        #if not session in LANA:
-        #    s += 1
-        #    continue
         try:
             participant_id = session.split('_')[0]
             if session in LANA:
