@@ -450,6 +450,7 @@ if __name__ == '__main__':
                     for i, functional in enumerate(_functionals):
                         nii_path = get_nii_path(functional, subject)
                         _functionals[i] = nii_path
+                    _functionals = [x for x in _functionals if os.path.exists(x)]
                     _config['sample']['main']['functional_paths'] = _functionals
                     _config['output_dir'] = os.path.join(RESULTS_DIR, config_name, subject)
                     if subject not in configs:
