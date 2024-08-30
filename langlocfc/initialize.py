@@ -337,8 +337,7 @@ if __name__ == '__main__':
             datacfg_path = os.path.join(subject_dir, 'data.cfg')
             dicoms = get_functional_dicoms(datacfg_path)
             functionals = list(range(1, len(dicoms) + 1))
-            nonlinguistic_functionals = set()
-    
+
             if len(functionals) > 0:  # Need at least one functional rune to perform parcellation
                 config = {
                     'sample': {
