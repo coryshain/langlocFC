@@ -220,6 +220,10 @@ if __name__ == '__main__':
     errors = open('errors.txt', 'w')
     contrast_names = open('contrast_names.txt', 'w')
     subjects_by_contrast = {}
+    contrasts_by_participant = {}
+    configs = {}  # Keyed by subject, then by config name
+
+    print('Computing configs...')
     while s < max_s:
         subject = SUBJECTS[s]
         if not os.path.exists(os.path.join(SUBJECTS_DIR, subject, 'Parcellate', 'func')):
@@ -238,11 +242,11 @@ if __name__ == '__main__':
             s += 1
             continue
         try:
+            participant_id = subject.split('_')[0]
             if subject in LANA:
                 langloc = LANA[subject]
             else:
                 langloc = None
-                participant_id = subject.split('_')[0]
 
             subject_dir = os.path.join(SUBJECTS_DIR, subject)
 
@@ -250,7 +254,7 @@ if __name__ == '__main__':
             firstlevel_functionals = {}
             firstlevel_catnames = {}
             langloc_firstlevels = None
-            langloc_functionals = None
+            langloc_functionals = []
             nonlinguistic_functionals = set()
             modelfile_paths = []
 
@@ -411,10 +415,12 @@ if __name__ == '__main__':
                             contrast_type = CONTRAST_TYPES[model_name]
                             _contrast = contrast_type + '_' + contrast
                             if model_name == langloc or _contrast not in config['evaluate']['main']['evaluation_atlases']:
-                                if _contrast not in config['evaluate']['main']['evaluation_atlases'] or model_name == langloc:
-                                    # The contrast has not been identified for this subject,
-                                    # or the current model is the selected langloc expt
-                                    config['evaluate']['main']['evaluation_atlases'][_contrast] = contrast_path
+                                # The contrast has not been identified for this subject,
+                                # or the current model is the selected langloc expt
+                                config['evaluate']['main']['evaluation_atlases'][_contrast] = contrast_path
+                                if participant_id not in contrasts_by_participant:
+                                    if _contrast not in contrasts_by_participant[participant_id]:
+                                        contrasts_by_participant[participant_id][_contrast] = contrast_path
                                 if _contrast not in subjects_by_contrast:
                                     subjects_by_contrast[_contrast] = []
                                 subjects_by_contrast[_contrast].append(subject)
@@ -445,14 +451,9 @@ if __name__ == '__main__':
                         _functionals[i] = nii_path
                     _config['sample']['main']['functional_paths'] = _functionals
                     _config['output_dir'] = os.path.join(RESULTS_DIR, config_name, subject)
-                    config_dir = os.path.join(args.config_dir, config_name)
-                    config_path = os.path.join(config_dir, '%s_%s.yml' % (subject, config_name))
-                    print('  Saving config to %s.' % config_path)
-                    if not args.dry_run:
-                        if not os.path.exists(config_dir):
-                            os.makedirs(config_dir)
-                        with open(config_path, 'w') as f:
-                            yaml.safe_dump(_config, f, sort_keys=False)
+                    if subject not in configs:
+                        configs[subject] = {}
+                    configs[subject][config_name] = _config
         except Exception as e:
             e_str = type(e).__name__ + ': ' + str(e) + '\n' + ''.join(traceback.format_tb(e.__traceback__))
             print(e_str)
@@ -466,6 +467,26 @@ if __name__ == '__main__':
             pass
             
         s += 1
+
+    print('Saving configs...')
+    for subject in configs:
+        print(subject)
+        for config_name in configs[subject]:
+            participant_id = subject.split('_')[0]
+            _config = configs[subject][config_name]
+            # Fill in any missing contrasts that are available from other sessions
+            for contrast in contrasts_by_participant[participant_id]:
+                if contrast not in _config['evaluate']['main']['evaluation_atlases']:
+                    _config['evaluate']['main']['evaluation_atlases'][contrast] = contrasts_by_participant[participant_id][contrast]
+            config_dir = os.path.join(args.config_dir, config_name)
+            config_path = os.path.join(config_dir, '%s_%s.yml' % (subject, config_name))
+            print('  Saving config to %s.' % config_path)
+            if not args.dry_run:
+                if not os.path.exists(config_dir):
+                    os.makedirs(config_dir)
+                with open(config_path, 'w') as f:
+                    yaml.safe_dump(_config, f, sort_keys=False)
+
     errors.close()
     contrast_names.close()
     with open('subjects_by_contrast.txt', 'w') as f:
