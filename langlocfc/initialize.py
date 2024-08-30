@@ -261,11 +261,6 @@ if __name__ == '__main__':
                     # Modelfile is ill-formed in some way. Skip
                     continue
                 model_name = model['model_name']
-                spm_path = os.path.join(subject_dir, f'firstlevel_{model_name}', 'SPM.mat')
-                # modelfile_paths.append(path)
-                if not os.path.exists(spm_path):
-                    # Not modeled, skip
-                    continue
                 cat_path = model['design']
                 cat_name = os.path.basename(cat_path).replace('.cat', '')
                 cat = parse_cfg(cat_path)
@@ -279,6 +274,10 @@ if __name__ == '__main__':
                 if model_name in NONLINGUISTIC and NONLINGUISTIC[model_name]:
                     for run in runs:
                         nonlinguistic_functionals.add(run)
+                spm_path = os.path.join(subject_dir, f'firstlevel_{model_name}', 'SPM.mat')
+                if not os.path.exists(spm_path):
+                    # Not modeled, skip
+                    continue
                 if (not model_name in firstlevels) or (len(spm_path) < len(firstlevels[model_name])):
                     firstlevels[model_name] = spm_path
                     firstlevel_functionals[model_name] = runs
