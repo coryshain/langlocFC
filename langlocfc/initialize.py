@@ -216,9 +216,7 @@ if __name__ == '__main__':
     args = argparser.parse_args()
 
     s = 0
-    #s = 1410
     max_s = len(SUBJECTS)
-    #max_s = 200
     errors = open('errors.txt', 'w')
     contrast_names = open('contrast_names.txt', 'w')
     subjects_by_contrast = {}
@@ -233,59 +231,112 @@ if __name__ == '__main__':
                 found = True
                 break
         if not found:
+            s += 1
+            continue
+        # TODO: Delete this check after tests are passed
+        if not subject in LANA:
+            s += 1
             continue
         try:
             if subject in LANA:
                 langloc = LANA[subject]
             else:
+                langloc = None
                 participant_id = subject.split('_')[0]
+
             subject_dir = os.path.join(SUBJECTS_DIR, subject)
-            modelfiles_paths_all = [] 
-            modelfiles_paths = []
+
+            firstlevels = {}
+            firstlevel_functionals = {}
+            firstlevel_catnames = {}
+            langloc_firstlevels = None
+            langloc_functionals = None
+            nonlinguistic_functionals = set()
+            modelfile_paths = []
+
+            # First collect all modelfile paths and grab any that match the langloc experiment
             for path in [os.path.join(subject_dir, x) for x in os.listdir(subject_dir) if MODELFILES_RE.match(x) and not x.startswith('.')]:
                 model = parse_cfg(path)
                 if 'model_name' not in model or 'design' not in model or not isinstance(model['design'], str) or not os.path.exists(model['design']) or os.path.isdir(model['design']):
                     # Modelfile is ill-formed in some way. Skip
                     continue
-                modelfiles_paths_all.append(path)
-                if langloc == model['model_name']:
-                    modelfiles_paths.append(path)
-            if len(modelfiles_paths_all):
-                modelfiles_path_all = sorted(modelfiles_paths_all, key=len)
-            if len(modelfiles_paths):
-                modelfiles_path = sorted(modelfiles_paths, key=len)
-                modelfiles_path = modelfiles_paths[0]
-            else:
-                modelfiles_path = None
-            if modelfiles_path:
-                model = parse_cfg(modelfiles_path)
-                catfile_path = model['design']
-            else:
-                catfiles = [os.path.join(subject_dir, x) for x in os.listdir(subject_dir) if x.endswith(f'{langloc}.cat')]
-                assert len(catfiles) == 1, f'Incorrect number of matching catfiles for {subject_dir}. Expected 1, got {len(catfiles)}.'
-                catfile_path = catfiles[0]
-                for path in modelfiles_paths_all:
-                    model = parse_cfg(path)
-                    if os.path.exists(model['design']) and os.path.samefile(catfile_path, model['design']):
-                        modelfiles_path = path
-                        langloc = model['model_name']
+                model_name = model['model_name']
+                spm_path = os.path.join(subject_dir, f'firstlevel_{model_name}', 'SPM.mat')
+                # modelfile_paths.append(path)
+                if not os.path.exists(spm_path):
+                    # Not modeled, skip
+                    continue
+                cat_path = model['design']
+                cat_name = os.path.basename(cat_path).replace('.cat', '')
+                cat = parse_cfg(cat_path)
+                runs = cat['runs']
+                if isinstance(runs, str):
+                    runs = [runs]
+                runs = [int(x) for x in runs]
+                if model_name in NONLINGUISTIC and NONLINGUISTIC[model_name]:
+                    for run in runs:
+                        nonlinguistic_functionals.add(run)
+                if (not model_name in firstlevels) or (len(spm_path) < len(firstlevels[model_name])):
+                    firstlevels[model_name] = spm_path
+                    firstlevel_functionals[model_name] = runs
+                    firstlevel_catnames[model_name] = cat_name
+                if (model_name == langloc) or (langloc is None and EXPERIMENTS[model_name] == 'Lang Loc'):
+                    if (langloc_firstlevels is None) or (len(spm_path) < len(langloc_firstlevels)):
+                        langloc_firstlevels = spm_path
+                        langloc_functionals = runs
+                        langloc = model_name  # Reset in case the name was just inferred above, no-op otherwise
+
+            if not len(firstlevels):
+                # No modelfiles found, so possibly a newer subject with a different directory structure. Search
+                # DefaultMNIPlusStructural instead
+                results_dir = os.path.join(subject_dir, 'DefaultMNI_PlusStructural', 'results', 'firstlevel')
+                if os.path.exists(results_dir):
+                    for model_name in os.listdir(results_dir):
+                        spm_file = os.path.join(results_dir, model_name, 'SPM.mat')
+                        if not os.path.exists(spm_file):
+                            # Not modeled, skip
+                            continue
+                        cat_files = sorted([x for x in os.listdir(subject_dir) if x.endswith(f'{model_name}.cat')], key=len)
+                        if len(cat_files):
+                            cat_file = cat_files[0]
+                            cat_path = os.path.join(subject_dir, cat_file)
+                            cat_name = cat_file.replace('.cat', '')
+                            cat = parse_cfg(cat_path)
+                            runs = cat['runs']
+                            if isinstance(runs, str):
+                                runs = [runs]
+                            runs = [int(x) for x in runs]
+                            if model_name in NONLINGUISTIC and NONLINGUISTIC[model_name]:
+                                for run in runs:
+                                    nonlinguistic_functionals.add(run)
+                            if (not model_name in firstlevels) or (len(spm_file) < len(firstlevels[model_name])):
+                                firstlevels[model_name] = spm_file
+                                firstlevel_functionals[model_name] = runs
+                                firstlevel_catnames[model_name] = cat_name
+                            if (model_name == langloc) or (langloc is None and EXPERIMENTS[model_name] == 'Lang Loc'):
+                                if (langloc_firstlevels is None) or (len(spm_file) < len(langloc_firstlevels)):
+                                    langloc_firstlevels = spm_file
+                                    langloc_functionals = runs
+
+            if langloc_firstlevels is None:
+                # Nothing exactly matched the langloc experiment, so now loop through the firstlevels for any that
+                # use a catfile named to match the langloc experiment. If one is found, use it.
+                for model_name in firstlevels:
+                    if firstlevel_catnames[model_name].endswith(langloc):
+                        langloc = model_name
+                        langloc_firstlevels = firstlevels[model_name]
+                        langloc_functionals = firstlevel_functionals[model_name]
                         break
-    
-            cat = parse_cfg(catfile_path)
-            if 'runs' in cat and isinstance(cat['runs'], str):
-                cat['runs'] = [cat['runs']]
-            cat['runs'] = [int(x) for x in cat['runs']]
-    
+
             print('SUBJECT #%d: %s' % (s + 1, subject))
             print('  Localizer: %s' % langloc)
-            print('  modelfiles path: %s' % modelfiles_path)
-            print('  *.cat path: %s' % catfile_path)
+            print('  SPM path: %s' % langloc_firstlevels)
+            print('  Langloc functionals: %s' % ', '.join([str(x) for x in langloc_functionals]))
  
             # Find IDs of functional runs
             datacfg_path = os.path.join(subject_dir, 'data.cfg')
             dicoms = get_functional_dicoms(datacfg_path)
             functionals = list(range(1, len(dicoms) + 1))
-            langloc_functionals = cat['runs']
             nonlinguistic_functionals = set()
     
             if len(functionals) > 0:  # Need at least one functional rune to perform parcellation
@@ -323,21 +374,8 @@ if __name__ == '__main__':
                     mask_path = get_nii_path('mask', subject)
                     config['sample']['main']['mask'] = mask_path
 
-                for _modelfile_path in modelfiles_paths_all:
-                    model_cfg = parse_cfg(_modelfile_path)
-                    model_name = model_cfg['model_name']
-                    if model_name in NONLINGUISTIC and NONLINGUISTIC[model_name]:
-                        cat_path = model_cfg.get('design', None)
-                        if cat_path:
-                            cat_cfg = parse_cfg(cat_path)
-                            if 'runs' in cat_cfg and isinstance(cat_cfg['runs'], str):
-                                cat_cfg['runs'] = [cat_cfg['runs']]
-                            for run in cat_cfg.get('runs', []):
-                                nonlinguistic_functionals.add(run)
-                    spm_path = os.path.join(subject_dir, f'firstlevel_{model_name}', 'SPM.mat')
-                    if not os.path.exists(spm_path):
-                        # Not modeled, skip
-                        continue
+                for model_name in firstlevels:
+                    spm_path = firstlevels[model_name]
                     name2ix = {}
                     try:
                         with h5py.File(spm_path, 'r') as f:
@@ -347,7 +385,7 @@ if __name__ == '__main__':
                                     name2ix[name] = i + 1
                             else:
                                 # No contrast atlases available for evaluation, skip
-                                continue    
+                                continue
                     except OSError:  # Old-style matlab file
                         try:
                             f = io.loadmat(spm_path)
@@ -360,7 +398,7 @@ if __name__ == '__main__':
                                 name2ix[name] = i + 1
                         else:
                             # No contrast atlases available for evaluation, skip
-                            continue    
+                            continue
                     if model_name in CONTRASTS:
                         for contrast in CONTRASTS[model_name]:
                             if contrast not in name2ix:
