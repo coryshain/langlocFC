@@ -419,8 +419,9 @@ if __name__ == '__main__':
                                 # or the current model is the selected langloc expt
                                 config['evaluate']['main']['evaluation_atlases'][_contrast] = contrast_path
                                 if participant_id not in contrasts_by_participant:
-                                    if _contrast not in contrasts_by_participant[participant_id]:
-                                        contrasts_by_participant[participant_id][_contrast] = contrast_path
+                                    contrasts_by_participant[participant_id] = {}
+                                if _contrast not in contrasts_by_participant[participant_id]:
+                                    contrasts_by_participant[participant_id][_contrast] = contrast_path
                                 if _contrast not in subjects_by_contrast:
                                     subjects_by_contrast[_contrast] = []
                                 subjects_by_contrast[_contrast].append(subject)
