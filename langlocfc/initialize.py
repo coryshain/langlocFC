@@ -13,6 +13,7 @@ from scipy import io
 import argparse
 
 SUBJECT_RE = re.compile('(\d+)_.+_PL2017$')
+#SUBJECT_RE = re.compile('(007)_SemAd_02_PL2017$')
 MODELFILES_RE = re.compile('.*modelfiles_(.+).cfg')
 SUBJECTS_DIR = os.path.join(os.sep, 'nese', 'mit', 'group', 'evlab', 'u', 'Shared', 'SUBJECTS')
 SUBJECTS = [x for x in os.listdir(SUBJECTS_DIR) if SUBJECT_RE.match(x)]
@@ -238,9 +239,9 @@ if __name__ == '__main__':
             s += 1
             continue
         # TODO: Delete this check after tests are passed
-        if not subject in LANA:
-            s += 1
-            continue
+        #if not subject in LANA:
+        #    s += 1
+        #    continue
         try:
             participant_id = subject.split('_')[0]
             if subject in LANA:
@@ -275,7 +276,7 @@ if __name__ == '__main__':
                 if isinstance(runs, str):
                     runs = runs.split()
                 runs = [int(x) for x in runs]
-                if model_name in NONLINGUISTIC and NONLINGUISTIC[model_name]:
+                if NONLINGUISTIC.get(model_name, None):
                     for run in runs:
                         nonlinguistic_functionals.add(run)
                 spm_path = os.path.join(subject_dir, f'firstlevel_{model_name}', 'SPM.mat')
@@ -286,7 +287,7 @@ if __name__ == '__main__':
                     firstlevels[model_name] = spm_path
                     firstlevel_functionals[model_name] = runs
                     firstlevel_catnames[model_name] = cat_name
-                if (model_name == langloc) or (langloc is None and EXPERIMENTS[model_name] == 'Lang Loc'):
+                if (model_name == langloc) or (langloc is None and EXPERIMENTS.get(model_name, None) == 'Lang Loc'):
                     if (langloc_firstlevels is None) or (len(spm_path) < len(langloc_firstlevels)):
                         langloc_firstlevels = spm_path
                         langloc_functionals = runs
@@ -312,19 +313,20 @@ if __name__ == '__main__':
                             if isinstance(runs, str):
                                 runs = runs.split()
                             runs = [int(x) for x in runs]
-                            if model_name in NONLINGUISTIC and NONLINGUISTIC[model_name]:
+                            if NONLINGUISTIC.get(model_name, None):
                                 for run in runs:
                                     nonlinguistic_functionals.add(run)
                             if (not model_name in firstlevels) or (len(spm_file) < len(firstlevels[model_name])):
                                 firstlevels[model_name] = spm_file
                                 firstlevel_functionals[model_name] = runs
                                 firstlevel_catnames[model_name] = cat_name
-                            if (model_name == langloc) or (langloc is None and EXPERIMENTS[model_name] == 'Lang Loc'):
+                            if (model_name == langloc) or (langloc is None and EXPERIMENTS.get(model_name, None) == 'Lang Loc'):
                                 if (langloc_firstlevels is None) or (len(spm_file) < len(langloc_firstlevels)):
                                     langloc_firstlevels = spm_file
                                     langloc_functionals = runs
+                                    langloc = model_name  # Reset in case the name was just inferred above, no-op otherwise
 
-            if langloc_firstlevels is None:
+            if langloc_firstlevels is None and langloc is not None:
                 # Nothing exactly matched the langloc experiment, so now loop through the firstlevels for any that
                 # use a catfile named to match the langloc experiment. If one is found, use it.
                 for model_name in firstlevels:
@@ -477,9 +479,10 @@ if __name__ == '__main__':
             participant_id = subject.split('_')[0]
             _config = configs[subject][config_name]
             # Fill in any missing contrasts that are available from other sessions
-            for contrast in contrasts_by_participant[participant_id]:
-                if contrast not in _config['evaluate']['main']['evaluation_atlases']:
-                    _config['evaluate']['main']['evaluation_atlases'][contrast] = contrasts_by_participant[participant_id][contrast]
+            if participant_id in contrasts_by_participant:
+                for contrast in contrasts_by_participant[participant_id]:
+                    if contrast not in _config['evaluate']['main']['evaluation_atlases']:
+                        _config['evaluate']['main']['evaluation_atlases'][contrast] = contrasts_by_participant[participant_id][contrast]
             config_dir = os.path.join(args.config_dir, config_name)
             config_path = os.path.join(config_dir, '%s_%s.yml' % (subject, config_name))
             print('  Saving config to %s.' % config_path)
