@@ -269,7 +269,10 @@ if __name__ == '__main__':
                 cat_path = model['design']
                 cat_name = os.path.basename(cat_path).replace('.cat', '')
                 cat = parse_cfg(cat_path)
-                runs = cat['runs']
+                runs = cat.get('runs', None)
+                if runs is None:
+                    # Modelfile points to bad catfile, skip
+                    continue
                 if isinstance(runs, str):
                     runs = [runs]
                 runs = [int(x) for x in runs]
