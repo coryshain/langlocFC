@@ -12,12 +12,11 @@ import h5py
 from scipy import io
 import argparse
 
-SUBJECT_RE = re.compile('(\d+)_.+_PL2017$')
-#SUBJECT_RE = re.compile('(007)_SemAd_02_PL2017$')
+SESSION_RE = re.compile('(\d+)_.+_PL2017$')
 MODELFILES_RE = re.compile('.*modelfiles_(.+).cfg')
 SUBJECTS_DIR = os.path.join(os.sep, 'nese', 'mit', 'group', 'evlab', 'u', 'Shared', 'SUBJECTS')
-SUBJECTS = [x for x in os.listdir(SUBJECTS_DIR) if SUBJECT_RE.match(x)]
-SUBJECTS = sorted(SUBJECTS, key=lambda x: int(SUBJECT_RE.match(x).group(1)))
+SESSIONS = [x for x in os.listdir(SUBJECTS_DIR) if SESSION_RE.match(x)]
+SESSIONS = sorted(SESSIONS, key=lambda x: int(SESSION_RE.match(x).group(1)))
 df = pd.read_csv('evlab_experiments_2024-06-18.csv')[['Experiment', 'Alternative Names', 'ExperimentType', 'Nonlinguistic']].to_dict('records')
 EXPERIMENTS = {x['Experiment']: x['ExperimentType'] for x in df}
 NONLINGUISTIC = {x['Experiment']: bool(x['Nonlinguistic']) for x in df}
@@ -95,12 +94,12 @@ CONFIG_NAMES = [
 ]
 
 
-def get_nii_path(run, subject):
+def get_nii_path(run, session):
     if run == 'mask':
         filename = 'wc1art_mean_rfunc_run-01_bold.nii'
     else:
         filename = 'sdwrfunc_run-%02d_bold.nii' % run
-    return os.path.join(SUBJECTS_DIR, subject, FUNC_SUBDIR, filename)
+    return os.path.join(SUBJECTS_DIR, session, FUNC_SUBDIR, filename)
 
 
 def get_functional_dicoms(path):
@@ -114,9 +113,9 @@ def get_functional_dicoms(path):
     return []
 
 
-def get_expt_names(subject):
+def get_expt_names(session):
     names = []
-    cats = [x for x in os.listdir(os.path.join(SUBJECTS_DIR, subject)) if x.endswith('.cat')]
+    cats = [x for x in os.listdir(os.path.join(SUBJECTS_DIR, session)) if x.endswith('.cat')]
     for name in EXPT_NAMES:
         for cat in cats:
             if name in cat:
@@ -125,12 +124,12 @@ def get_expt_names(subject):
     return names
 
 
-def get_langloc_functionals(subject, langloc):
-    subject_dir = os.path.join(SUBJECTS_DIR, subject)
-    cats = [x for x in os.listdir(subject_dir) if (x.endswith('.cat') and langloc in x)]
-    assert len(cats) == 1, 'There should be exactly 1 langloc *.cat file for subject %s. Got %d' % (subject, len(cats))
+def get_langloc_functionals(session, langloc):
+    session_dir = os.path.join(SUBJECTS_DIR, session)
+    cats = [x for x in os.listdir(session_dir) if (x.endswith('.cat') and langloc in x)]
+    assert len(cats) == 1, 'There should be exactly 1 langloc *.cat file for session %s. Got %d' % (session, len(cats))
     functionals = []
-    with open(os.path.join(subject_dir, cats[0]), 'r') as f:
+    with open(os.path.join(session_dir, cats[0]), 'r') as f:
         for line in f:
             if 'runs' in line:
                 for functional in line.strip().split():
@@ -211,27 +210,27 @@ def parse_cfg(path):
 
 if __name__ == '__main__':
     argparser = argparse.ArgumentParser('Initialize the fMRI parcellation experiment (data and configs).')
-    argparser.add_argument('-m', '--use_mask', action='store_true', help='Use subject-specific mask (else, use nilearn grey matter template).')
+    argparser.add_argument('-m', '--use_mask', action='store_true', help='Use session-specific mask (else, use nilearn grey matter template).')
     argparser.add_argument('-n', '--dry_run', action='store_true', help='Simulate execution without actually creating or changing any files')
     argparser.add_argument('-c', '--config_dir', default='../../parcellate/cfg', help='Directory in which to dump config files')
     args = argparser.parse_args()
 
     s = 0
-    max_s = len(SUBJECTS)
+    max_s = len(SESSIONS)
     errors = open('errors.txt', 'w')
     contrast_names = open('contrast_names.txt', 'w')
-    subjects_by_contrast = {}
+    sessions_by_contrast = {}
     contrasts_by_participant = {}
-    configs = {}  # Keyed by subject, then by config name
+    configs = {}  # Keyed by session, then by config name
 
     print('Computing configs...')
     while s < max_s:
-        subject = SUBJECTS[s]
-        if not os.path.exists(os.path.join(SUBJECTS_DIR, subject, 'Parcellate', 'func')):
+        session = SESSIONS[s]
+        if not os.path.exists(os.path.join(SUBJECTS_DIR, session, 'Parcellate', 'func')):
             s += 1
             continue
         found = False
-        for path in os.listdir(os.path.join(SUBJECTS_DIR, subject, 'Parcellate', 'func')):
+        for path in os.listdir(os.path.join(SUBJECTS_DIR, session, 'Parcellate', 'func')):
             if path.startswith('sdwrfunc_run-'):
                 found = True
                 break
@@ -239,17 +238,17 @@ if __name__ == '__main__':
             s += 1
             continue
         # TODO: Delete this check after tests are passed
-        #if not subject in LANA:
+        #if not session in LANA:
         #    s += 1
         #    continue
         try:
-            participant_id = subject.split('_')[0]
-            if subject in LANA:
-                langloc = LANA[subject]
+            participant_id = session.split('_')[0]
+            if session in LANA:
+                langloc = LANA[session]
             else:
                 langloc = None
 
-            subject_dir = os.path.join(SUBJECTS_DIR, subject)
+            session_dir = os.path.join(SUBJECTS_DIR, session)
 
             firstlevels = {}
             firstlevel_functionals = {}
@@ -260,7 +259,7 @@ if __name__ == '__main__':
             modelfile_paths = []
 
             # First collect all modelfile paths and grab any that match the langloc experiment
-            for path in [os.path.join(subject_dir, x) for x in os.listdir(subject_dir) if MODELFILES_RE.match(x) and not x.startswith('.')]:
+            for path in [os.path.join(session_dir, x) for x in os.listdir(session_dir) if MODELFILES_RE.match(x) and not x.startswith('.')]:
                 model = parse_cfg(path)
                 if 'model_name' not in model or 'design' not in model or not isinstance(model['design'], str) or not os.path.exists(model['design']) or os.path.isdir(model['design']):
                     # Modelfile is ill-formed in some way. Skip
@@ -279,7 +278,7 @@ if __name__ == '__main__':
                 if NONLINGUISTIC.get(model_name, None):
                     for run in runs:
                         nonlinguistic_functionals.add(run)
-                spm_path = os.path.join(subject_dir, f'firstlevel_{model_name}', 'SPM.mat')
+                spm_path = os.path.join(session_dir, f'firstlevel_{model_name}', 'SPM.mat')
                 if not os.path.exists(spm_path):
                     # Not modeled, skip
                     continue
@@ -294,19 +293,19 @@ if __name__ == '__main__':
                         langloc = model_name  # Reset in case the name was just inferred above, no-op otherwise
 
             if not len(firstlevels):
-                # No modelfiles found, so possibly a newer subject with a different directory structure. Search
+                # No modelfiles found, so possibly a newer session with a different directory structure. Search
                 # DefaultMNIPlusStructural instead
-                results_dir = os.path.join(subject_dir, 'DefaultMNI_PlusStructural', 'results', 'firstlevel')
+                results_dir = os.path.join(session_dir, 'DefaultMNI_PlusStructural', 'results', 'firstlevel')
                 if os.path.exists(results_dir):
                     for model_name in os.listdir(results_dir):
                         spm_file = os.path.join(results_dir, model_name, 'SPM.mat')
                         if not os.path.exists(spm_file):
                             # Not modeled, skip
                             continue
-                        cat_files = sorted([x for x in os.listdir(subject_dir) if x.endswith(f'{model_name}.cat')], key=len)
+                        cat_files = sorted([x for x in os.listdir(session_dir) if x.endswith(f'{model_name}.cat')], key=len)
                         if len(cat_files):
                             cat_file = cat_files[0]
-                            cat_path = os.path.join(subject_dir, cat_file)
+                            cat_path = os.path.join(session_dir, cat_file)
                             cat_name = cat_file.replace('.cat', '')
                             cat = parse_cfg(cat_path)
                             runs = cat['runs']
@@ -336,13 +335,13 @@ if __name__ == '__main__':
                         langloc_functionals = firstlevel_functionals[model_name]
                         break
 
-            print('SUBJECT #%d: %s' % (s + 1, subject))
+            print('SESSION #%d: %s' % (s + 1, session))
             print('  Localizer: %s' % langloc)
             print('  SPM path: %s' % langloc_firstlevels)
             print('  Langloc functionals: %s' % ', '.join([str(x) for x in langloc_functionals]))
  
             # Find IDs of functional runs
-            datacfg_path = os.path.join(subject_dir, 'data.cfg')
+            datacfg_path = os.path.join(session_dir, 'data.cfg')
             dicoms = get_functional_dicoms(datacfg_path)
             functionals = list(range(1, len(dicoms) + 1))
 
@@ -378,7 +377,7 @@ if __name__ == '__main__':
         
                 # Grey matter mask
                 if args.use_mask:
-                    mask_path = get_nii_path('mask', subject)
+                    mask_path = get_nii_path('mask', session)
                     config['sample']['main']['mask'] = mask_path
 
                 for model_name in firstlevels:
@@ -411,24 +410,24 @@ if __name__ == '__main__':
                             if contrast not in name2ix:
                                 continue
                             contrast_path = '%s_%04d.nii' % (EVAL_TYPE, name2ix[contrast])
-                            contrast_path = os.path.join(subject_dir, f'firstlevel_{model_name}', contrast_path)
+                            contrast_path = os.path.join(session_dir, f'firstlevel_{model_name}', contrast_path)
                             if 'evaluation_atlases' not in config['evaluate']['main']:
                                 config['evaluate']['main']['evaluation_atlases'] = {}
                             contrast_type = CONTRAST_TYPES[model_name]
                             _contrast = contrast_type + '_' + contrast
                             if model_name == langloc or _contrast not in config['evaluate']['main']['evaluation_atlases']:
-                                # The contrast has not been identified for this subject,
+                                # The contrast has not been identified for this session,
                                 # or the current model is the selected langloc expt
                                 config['evaluate']['main']['evaluation_atlases'][_contrast] = contrast_path
                                 if participant_id not in contrasts_by_participant:
                                     contrasts_by_participant[participant_id] = {}
                                 if _contrast not in contrasts_by_participant[participant_id]:
                                     contrasts_by_participant[participant_id][_contrast] = contrast_path
-                                if _contrast not in subjects_by_contrast:
-                                    subjects_by_contrast[_contrast] = []
-                                subjects_by_contrast[_contrast].append(subject)
+                                if _contrast not in sessions_by_contrast:
+                                    sessions_by_contrast[_contrast] = []
+                                sessions_by_contrast[_contrast].append(session)
                     else:
-                        contrast_names.write(subject + ': ' + model_name + '\n')
+                        contrast_names.write(session + ': ' + model_name + '\n')
                         for x in name2ix:
                             contrast_names.write(f'  {x}\n')
                         contrast_names.write('\n')
@@ -450,18 +449,18 @@ if __name__ == '__main__':
                     if not len(_functionals):
                         continue
                     for i, functional in enumerate(_functionals):
-                        nii_path = get_nii_path(functional, subject)
+                        nii_path = get_nii_path(functional, session)
                         _functionals[i] = nii_path
                     _functionals = [x for x in _functionals if os.path.exists(x)]
                     _config['sample']['main']['functional_paths'] = _functionals
-                    _config['output_dir'] = os.path.join(RESULTS_DIR, config_name, subject)
-                    if subject not in configs:
-                        configs[subject] = {}
-                    configs[subject][config_name] = _config
+                    _config['output_dir'] = os.path.join(RESULTS_DIR, config_name, session)
+                    if session not in configs:
+                        configs[session] = {}
+                    configs[session][config_name] = _config
         except Exception as e:
             e_str = type(e).__name__ + ': ' + str(e) + '\n' + ''.join(traceback.format_tb(e.__traceback__))
             print(e_str)
-            errors.write(subject + '\n')
+            errors.write(session + '\n')
             errors.write(e_str + '\n\n\n')
             errors.flush()
         except KeyboardInterrupt:
@@ -473,18 +472,18 @@ if __name__ == '__main__':
         s += 1
 
     print('Saving configs...')
-    for subject in configs:
-        print(subject)
-        for config_name in configs[subject]:
-            participant_id = subject.split('_')[0]
-            _config = configs[subject][config_name]
+    for session in configs:
+        print(session)
+        for config_name in configs[session]:
+            participant_id = session.split('_')[0]
+            _config = configs[session][config_name]
             # Fill in any missing contrasts that are available from other sessions
             if participant_id in contrasts_by_participant:
                 for contrast in contrasts_by_participant[participant_id]:
                     if contrast not in _config['evaluate']['main']['evaluation_atlases']:
                         _config['evaluate']['main']['evaluation_atlases'][contrast] = contrasts_by_participant[participant_id][contrast]
             config_dir = os.path.join(args.config_dir, config_name)
-            config_path = os.path.join(config_dir, '%s_%s.yml' % (subject, config_name))
+            config_path = os.path.join(config_dir, '%s_%s.yml' % (session, config_name))
             print('  Saving config to %s.' % config_path)
             if not args.dry_run:
                 if not os.path.exists(config_dir):
@@ -494,11 +493,11 @@ if __name__ == '__main__':
 
     errors.close()
     contrast_names.close()
-    with open('subjects_by_contrast.txt', 'w') as f:
-        for contrast in subjects_by_contrast:
-            f.write('%s | N subjects: %d\n' % (contrast, len(subjects_by_contrast[contrast])))
-            for subject in subjects_by_contrast[contrast]:
-                f.write('  %s\n' % subject)
+    with open('sessions_by_contrast.txt', 'w') as f:
+        for contrast in sessions_by_contrast:
+            f.write('%s | N sessions: %d\n' % (contrast, len(sessions_by_contrast[contrast])))
+            for session in sessions_by_contrast[contrast]:
+                f.write('  %s\n' % session)
             f.write('\n')
             f.flush()
 
