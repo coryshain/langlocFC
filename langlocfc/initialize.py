@@ -417,6 +417,9 @@ if __name__ == '__main__':
                         else:
                             # No contrast atlases available for evaluation, skip
                             continue
+                    except RuntimeError:
+                        # Bad SPM file, skip
+                        continue
                     if model_name in CONTRASTS or 'alice' in model_name.lower():
                         if 'alice' in model_name.lower():
                             _model_name = 'Alice'
