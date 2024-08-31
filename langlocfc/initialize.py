@@ -26,6 +26,7 @@ for x in ['langloc', 'langlocSN', 'SWJNaud', 'SWN', 'SWNlocIPS168_2runs' 'SWNloc
 for x in ('ToMshort',):
     EXPERIMENTS[x] = 'Other Loc'
     NONLINGUISTIC[x] = False
+NONLINGUISTIC['Alice'] = False
 for x in (
         'MDloc',
         'spatialFIN',
@@ -70,6 +71,8 @@ for x in EXPERIMENTS:
     elif x.lower() in ('music_2009', 'music_task', 'musictask_2010'):
         CONTRASTS[x] = ['I-B']
         CONTRAST_TYPES[x] = 'Music'
+CONTRASTS['Alice'] = ['I-D']
+CONTRAST_TYPES['Alice'] = 'Lang'
 LANA = pd.read_csv('LanA_sessions.csv')[['Session', 'Experiment']].to_dict('records')
 LANA = {x['Session']: x['Experiment'] for x in LANA}
 FUNC_SUBDIR = os.path.join('Parcellate', 'func')
@@ -104,13 +107,23 @@ def get_nii_path(run, session):
 
 def get_functional_dicoms(path):
     in_func = False
+    out = []
     with open(path, 'r') as f:
         for line in f:
             if 'functionals' in line:
                 in_func = True
             elif in_func:
-                return [int(x) for x in DELIM_RE.split(line.strip())]
-    return []
+                try:
+                    return [int(x) for x in DELIM_RE.split(line.strip())]
+                except ValueError:
+                    if line.startswith('#'):
+                        break
+                    line = line.strip()
+                    if line:
+                        dcm = re.search('-(\d+)-1.dcm', line)
+                        if dcm.groups():
+                            out.append(int(dcm.group(1)))
+    return out
 
 
 def get_expt_names(session):
@@ -265,7 +278,7 @@ if __name__ == '__main__':
                 cat_name = os.path.basename(cat_path).replace('.cat', '')
                 cat = parse_cfg(cat_path)
                 runs = cat.get('runs', None)
-                if runs is None:
+                if runs is None or '?' in runs:
                     # Modelfile points to bad catfile, skip
                     continue
                 if isinstance(runs, str):
@@ -304,7 +317,10 @@ if __name__ == '__main__':
                             cat_path = os.path.join(session_dir, cat_file)
                             cat_name = cat_file.replace('.cat', '')
                             cat = parse_cfg(cat_path)
-                            runs = cat['runs']
+                            runs = cat.get('runs', None)
+                            if runs is None or '?' in runs:
+                                # Modelfile points to bad catfile, skip
+                                continue
                             if isinstance(runs, str):
                                 runs = runs.split()
                             runs = [int(x) for x in runs]
@@ -401,15 +417,19 @@ if __name__ == '__main__':
                         else:
                             # No contrast atlases available for evaluation, skip
                             continue
-                    if model_name in CONTRASTS:
-                        for contrast in CONTRASTS[model_name]:
+                    if model_name in CONTRASTS or 'alice' in model_name.lower():
+                        if 'alice' in model_name.lower():
+                            _model_name = 'Alice'
+                        else:
+                            _model_name = model_name
+                        for contrast in CONTRASTS[_model_name]:
                             if contrast not in name2ix:
                                 continue
                             contrast_path = '%s_%04d.nii' % (EVAL_TYPE, name2ix[contrast])
                             contrast_path = os.path.join(session_dir, f'firstlevel_{model_name}', contrast_path)
                             if 'evaluation_atlases' not in config['evaluate']['main']:
                                 config['evaluate']['main']['evaluation_atlases'] = {}
-                            contrast_type = CONTRAST_TYPES[model_name]
+                            contrast_type = CONTRAST_TYPES[_model_name]
                             _contrast = contrast_type + '_' + contrast
                             if model_name == langloc or _contrast not in config['evaluate']['main']['evaluation_atlases']:
                                 # The contrast has not been identified for this session,
@@ -481,6 +501,9 @@ if __name__ == '__main__':
                     if contrast not in _config['evaluate']['main']['evaluation_atlases']:
                         _config['evaluate']['main']['evaluation_atlases'][contrast] = contrasts_by_participant[participant_id][contrast]
             config_dir = os.path.join(args.config_dir, config_name)
+            if not len(_config['evaluate']['main']):
+                print('  No contrasts available for evaluation for %s_%s. Skipping...' % (session, config_name))
+                continue
             config_path = os.path.join(config_dir, '%s_%s.yml' % (session, config_name))
             print('  Saving config to %s.' % config_path)
             if not args.dry_run:
