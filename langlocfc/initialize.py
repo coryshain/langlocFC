@@ -430,7 +430,8 @@ if __name__ == '__main__':
                             if contrast not in name2ix:
                                 continue
                             contrast_path = '%s_%04d.nii' % (EVAL_TYPE, name2ix[contrast])
-                            contrast_path = os.path.join(session_dir, f'firstlevel_{model_name}', contrast_path)
+                            contrast_path = os.path.join(os.path.dirname(spm_path), contrast_path)
+                            assert os.path.exists(contrast_path), 'Contrast file not found: %s' % contrast_path
                             if 'evaluation_atlases' not in config['evaluate']['main']:
                                 config['evaluate']['main']['evaluation_atlases'] = {}
                             contrast_type = CONTRAST_TYPES[_model_name]
