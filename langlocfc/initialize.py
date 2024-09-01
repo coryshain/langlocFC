@@ -13,6 +13,7 @@ from scipy import io
 import argparse
 
 SESSION_RE = re.compile('(\d+)_.+_PL2017$')
+SESSION_RE = re.compile('(958)_.+_PL2017$')
 MODELFILES_RE = re.compile('.*modelfiles_(.+).cfg')
 SUBJECTS_DIR = os.path.join(os.sep, 'nese', 'mit', 'group', 'evlab', 'u', 'Shared', 'SUBJECTS')
 SESSIONS = [x for x in os.listdir(SUBJECTS_DIR) if SESSION_RE.match(x)]
@@ -504,9 +505,9 @@ if __name__ == '__main__':
                     if contrast not in _config['evaluate']['main']['evaluation_atlases']:
                         _config['evaluate']['main']['evaluation_atlases'][contrast] = contrasts_by_participant[participant_id][contrast]
             config_dir = os.path.join(args.config_dir, config_name)
-            if not len(_config['evaluate']['main']):
-                print('  No contrasts available for evaluation for %s_%s. Skipping...' % (session, config_name))
-                continue
+            #if not len(_config['evaluate']['main']):
+            #    print('  No contrasts available for evaluation for %s_%s. Skipping...' % (session, config_name))
+            #    continue
             config_path = os.path.join(config_dir, '%s_%s.yml' % (session, config_name))
             print('  Saving config to %s.' % config_path)
             if not args.dry_run:
