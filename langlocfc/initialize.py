@@ -13,7 +13,6 @@ from scipy import io
 import argparse
 
 SESSION_RE = re.compile('(\d+)_.+_PL2017$')
-SESSION_RE = re.compile('(958)_.+_PL2017$')
 MODELFILES_RE = re.compile('.*modelfiles_(.+).cfg')
 SUBJECTS_DIR = os.path.join(os.sep, 'nese', 'mit', 'group', 'evlab', 'u', 'Shared', 'SUBJECTS')
 SESSIONS = [x for x in os.listdir(SUBJECTS_DIR) if SESSION_RE.match(x)]
