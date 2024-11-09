@@ -1,4 +1,5 @@
 import os
+import numpy as np
 import pandas as pd
 from pymatreader import read_mat
 import h5py
@@ -71,7 +72,10 @@ for subject in subjects:
 
         for pdd_parcel_name in pdd_parcels:
             pdd_parcel = pdd_parcels[pdd_parcel_name]
-            mask = network * pdd_parcel
+            # mask = network * pdd_parcel
+            mask = network[pdd_parcel]
+            thresh = np.quantile(mask, 0.9)
+            mask = mask > thresh
             effect_size = (contrast * mask).sum() / mask.sum()
 
             out.append(dict(
@@ -83,5 +87,3 @@ for subject in subjects:
 
 out = pd.DataFrame(out)
 out.to_csv('pdd_results.csv')
-
-
