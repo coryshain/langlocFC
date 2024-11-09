@@ -1,4 +1,7 @@
 import os
+import re
+
+date_re = re.compile('_(\d{8})[a-z]?_')
 
 bash = '''\
 #!/bin/bash
@@ -20,12 +23,26 @@ subjects = [x for x in os.listdir(subjects_dir) if x.endswith('_PL2017')]
 
 for subject in subjects:
     assert os.path.exists(os.path.join(subjects_dir, subject)), 'Directory not found for subject %s' % subject
+    date = date_re.search(subject)
+    if date:
+        date = int(date.group(1))
+        if date > 20240800:  # August 2024 or later, skip
+            continue
     done = False
     if os.path.exists(os.path.join(subjects_dir, subject, 'Parcellate', 'func')):
+        sdwr_max = None
+        func_max = None
         for path in os.listdir(os.path.join(subjects_dir, subject, 'Parcellate', 'func')):
+            if path.startswith('func_run-'):
+                run = int(path[9:11])
+                if func_max is None or run > func_max:
+                    func_max = run
             if path.startswith('sdwrfunc_run-'):
-                done = True
-                break
+                run = int(path[13:15])
+                if sdwr_max is None or run > sdwr_max:
+                    sdwr_max = run
+        if sdwr_max is not None and func_max is not None and sdwr_max == func_max:
+            done = True
     if done:
         continue
     outfile = 'parcellate_preproc_%s.pbs' % subject

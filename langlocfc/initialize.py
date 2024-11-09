@@ -88,7 +88,8 @@ N_SAMPLES_FINAL = 256
 N_ALIGNMENTS = 512
 HIGH_PASS = 0.01
 LOW_PASS = 0.1
-EVAL_TYPE = 'con'
+#EVAL_TYPE = 'con'
+EVAL_TYPE = 'spmT'
 CONFIG_NAMES = [
     'all',
     'onlylangloc',
