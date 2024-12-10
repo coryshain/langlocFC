@@ -28,7 +28,8 @@ df.StimType[df.Effect.str.contains('nc')] = 'N'
 df.StimType[(~df.Effect.str.contains('nc')) & (~df.Effect.str.contains('jab'))] = 'C'
 df['nlength'] = df.Effect.str.extract('(\d+)').astype(int)
 
-ROIs = [x for x in df.ROI.unique().tolist() if x != 'Overall']
+# ROIs = [x for x in df.ROI.unique().tolist() if x != 'Overall']
+ROIs = df.ROI.unique().tolist()
 lengths = [1, 2, 3, 4, 6, 12]
 ylims = {'': (-0.68, 3.5)}
 plot_basis = length2x(lengths)
