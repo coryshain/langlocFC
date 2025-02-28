@@ -7,6 +7,8 @@ from scipy import io
 from nilearn import image
 
 conditions = ['H_1c', 'G_2c', 'E_3c', 'C_4c', 'B_6c', 'A_12c', 'F_3nc', 'D_4nc', 'K_jab1c', 'J_jab4c', 'I_jab12c']
+parcellation_type = 'nolangloc_pca'
+network_type = 'LANA'
 
 subjects = []
 with open('nlength2_subjects.csv', 'r') as f:
@@ -26,7 +28,10 @@ out = []
 
 for subject in subjects:
     subject_dir = os.path.join('/', 'nese', 'mit', 'group', 'evlab', 'u', 'Shared', 'SUBJECTS', subject)
-    parcellation_dir = os.path.join('..', '..', 'results', 'fMRI_parcellation', 'nolangloc', subject, 'parcellation', 'main')
+    parcellation_dir = os.path.join('/', 'nese', 'mit', 'group', 'evlab', 'u', 'cshain', 'results', 'fMRI_parcellation', parcellation_type, subject, 'parcellation', 'main')
+    if not os.path.exists(parcellation_dir):
+        print('Parcellation dir not found: %s' % parcellation_dir)
+        continue
     firstlevel_dir = os.path.join(subject_dir, 'firstlevel_Nlength_con2')
     spm_path = os.path.join(firstlevel_dir, 'SPM.mat')
     name2ix = {}
@@ -59,7 +64,7 @@ for subject in subjects:
 
     for cond in conditions:
         contrast = image.get_data(image.smooth_img(os.path.join(firstlevel_dir, 'con_%04d.nii' % name2ix[cond]), None))
-        network = image.get_data(image.smooth_img(os.path.join(parcellation_dir, 'LANG_sub1.nii.gz'), None))
+        network = image.get_data(image.smooth_img(os.path.join(parcellation_dir, '%s_sub1.nii.gz' % network_type), None))
         
         pdd_parcel_name = 'Overall'
         effect_size = (contrast * network).sum() / network.sum()
@@ -72,10 +77,11 @@ for subject in subjects:
 
         for pdd_parcel_name in pdd_parcels:
             pdd_parcel = pdd_parcels[pdd_parcel_name]
-            # mask = network * pdd_parcel
-            mask = network[pdd_parcel]
-            thresh = np.quantile(mask, 0.9)
-            mask = mask > thresh
+            #mask = network * pdd_parcel
+            sel = pdd_parcel > 0.5
+            thresh = np.quantile(network[sel], 0.9)
+            #thresh = 0.5
+            mask = (network * pdd_parcel) > thresh
             effect_size = (contrast * mask).sum() / mask.sum()
 
             out.append(dict(
