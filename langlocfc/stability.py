@@ -157,8 +157,8 @@ if __name__ == '__main__':
                     continue
                 # Filter out any repeats
                 niis = {}
-                for niis in nii_paths[setname][subject]:
-                    niis[niis['path']] = niis
+                for nii in nii_paths[setname][subject]:
+                    niis[nii['path']] = nii
                 niis = list(niis.values())
                 row = dict(
                     subject=subject,
