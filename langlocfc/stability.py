@@ -127,8 +127,8 @@ if __name__ == '__main__':
                 continue
             # Filter out any repeats
             niis = {}
-            for even in nii_paths['Lang_EVEN_S-N'][subject]:
-                niis[even['path']] = dict(even=even, odd=nii_paths['Lang_ODD_S-N'][subject])
+            for even, odd in zip(nii_paths['Lang_EVEN_S-N'][subject], nii_paths['Lang_ODD_S-N'][subject]):
+                niis[even['path']] = dict(even=even, odd=odd)
             for even_path in niis:
                 even = niis[even_path]['even']
                 odd = niis[even_path]['odd']
