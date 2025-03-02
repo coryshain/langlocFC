@@ -123,7 +123,14 @@ def get_functional_dicoms(path):
                     if line:
                         dcm = re.search('-(\d+)-1.dcm', line)
                         if dcm.groups():
-                            out.append(int(dcm.group(1)))
+                            val = int(dcm.group(1))
+                            if '045_FED_20160803a_3T1_PL2017' in path and val == 31:
+                                # Not actually a functional run, skip
+                                continue
+                            elif '049_KAN_RHnonlit_10_PL2017' in path and val == 14:
+                                # Not actually a functional run, skip
+                                continue
+                            out.append(val)
     return out
 
 

@@ -73,6 +73,9 @@ if __name__ == '__main__':
             continue
     subject_paths = sorted(subject_paths, key=lambda x: (int(x.split('_')[0]), x.split('_')[1]))
 
+    if not os.path.exists('stitched'):
+        os.makedirs('stitched')
+
     for subject_path in subject_paths:
         subject = int(subject_path.split('_')[0])
         if subject in index_by_subject:
@@ -96,7 +99,7 @@ if __name__ == '__main__':
                 subject_path,
                 'parcellation',
                 args.parcellation_id,
-                'parcellate_kwargs_final.yml'
+                'parcellate_kwargs_optimized.yml'
             )
             with open(cfg_path, 'r') as f:
                 cfg = yaml.safe_load(f)
@@ -212,14 +215,14 @@ if __name__ == '__main__':
 
             if img_ix < n_per_page:
                 page.append(canvas)
-                img_ix += 1
             else:
                 page = stitch_page(page)
-                page.save('atlases_%s_%s_page_%d.png' % (args.parcellation_id, args.filename, page_ix))
-                page = []
+                page.save('stitched/atlases_%s_%s_page_%d.png' % (args.parcellation_id, args.filename, page_ix))
+                page = [canvas]
                 img_ix = 0
                 page_ix += 1
+            img_ix += 1
 
     if len(page):
         page = stitch_page(page)
-        page.save('atlases_%s_%s_page_%d.png' % (args.parcellation_id, args.filename, page_ix))
+        page.save('stitched/atlases_%s_%s_page_%d.png' % (args.parcellation_id, args.filename, page_ix))
