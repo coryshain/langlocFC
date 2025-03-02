@@ -196,8 +196,8 @@ if __name__ == '__main__':
                 for subject in nii_paths[setname]:
                     # Filter out any repeats
                     niis = {}
-                    for niis in nii_paths[setname][subject]:
-                        niis[niis['path']] = niis
+                    for nii in nii_paths[setname][subject]:
+                        niis[nii['path']] = nii
                     niis = list(niis.values())
                     averaged_statmaps[subject] = [
                         np.stack(
