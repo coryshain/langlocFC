@@ -9,6 +9,7 @@ plt.rcParams["font.size"] = 14
 PARCELLATE_PATH = '../../results/fMRI_parcellate'
 REF_PATH = (f'{PARCELLATE_PATH}/{{parcellation_type}}/plots/performance/'
              f'{{atlas}}_sub1_ref_sim.csv')
+CORR_PATH = (f'{PARCELLATE_PATH}/stability/between_networks.csv')
 EVAL_PATH = (f'{PARCELLATE_PATH}/{{parcellation_type}}/plots/performance/'
              f'{{atlas}}_sub1_eval_{{eval_type}}.csv')
 PARCELLATION_TYPES = ['nolangloc', 'nonlinguistic']
@@ -100,6 +101,67 @@ for parcellation_type in PARCELLATION_TYPES:
     for atlas_type in ATLAS_TYPES:
         atlases = ATLAS_TYPES[atlas_type]
 
+        # FC atlases
+        plot_x_base = np.arange(len(ALL_REFERENCE))
+        plt.gca().spines['top'].set_visible(False)
+        plt.gca().spines['right'].set_visible(False)
+        plt.gca().axhline(y=0, lw=1, c='k', alpha=1, zorder=-1)
+        x_delta = 0.8 / len(atlases)
+
+        if atlas_type == 'Language':
+            ylim = (-0.1, 2.5)
+        else:
+            ylim = None
+
+        df = pd.read_csv(CORR_PATH.format(parcellation_type=parcellation_type))
+        for a, atlas in enumerate(atlases):
+            sel = (df.network == atlas) & (df.rtype == 'raw')
+            _df = df[sel]
+            assert _df.shape[0] == 1, 'Multiple rows for %s' % atlas
+            _df = _df.iloc[0]
+            _y = _df[ALL_REFERENCE].values
+            _y_err = _df[[x + '_sem' for x in ALL_REFERENCE]].values
+            _x = plot_x_base + a * x_delta
+            if atlas == 'LANG':
+                _c = (0.5, 0.5, 0.5)
+            else:
+                _c = (0.2, 0.2, 0.2)
+            linewidth = 2
+            label = '%s (FC)' % REFERENCE2NAME[atlas]
+            color = _c
+            edgecolor = _c
+            linestyle = '-'
+
+            plt.bar(
+                _x,
+                _y,
+                yerr=_y_err,
+                label=label,
+                width=x_delta,
+                capsize=0,
+                color=color,
+                edgecolor=edgecolor,
+                ecolor=edgecolor,
+                linestyle=linestyle,
+                linewidth=linewidth,
+                error_kw=dict(linewidth=linewidth),
+                zorder=0
+            )
+
+        tick_shift = x_delta * (len(atlases) - 0.5) / 2
+        plt.xticks(plot_x_base + tick_shift, [REFERENCE2NAME[x] for x in ALL_REFERENCE], rotation=45, ha='right')
+        ylabel = 'z(r)'
+        plt.ylabel(ylabel)
+        if ylim is not None:
+            plt.ylim(ylim)
+        plt.legend(bbox_to_anchor=(0.5, 1), loc='lower center', ncol=4, frameon=False, fontsize=12)
+        if not os.path.exists('plots'):
+            os.makedirs('plots')
+        plt.gcf().set_size_inches(8, 6)
+        plt.tight_layout()
+        plt.savefig(f'plots/performance_{parcellation_type}_{atlas_type}_networksim{SUFFIX}')
+        plt.close('all')
+
         # Reference atlases
         plot_x_base = np.arange(len(ALL_REFERENCE))
         plt.gca().spines['top'].set_visible(False)
@@ -147,9 +209,9 @@ for parcellation_type in PARCELLATION_TYPES:
                 zorder=0
             )
 
-        tick_shift = x_delta * (len(atlases) - 0.5)
+        tick_shift = x_delta * (len(atlases) - 0.5) / 2
         plt.xticks(plot_x_base + tick_shift, [REFERENCE2NAME[x] for x in ALL_REFERENCE], rotation=45, ha='right')
-        ylabel = 'Spatial correlation'
+        ylabel = 'z(r)'
         plt.ylabel(ylabel)
         if ylim is not None:
             plt.ylim(ylim)

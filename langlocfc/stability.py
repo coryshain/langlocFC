@@ -36,6 +36,7 @@ RUN_EVEN_VS_ODD = True
 RUN_WITHIN_SUBECTS = True
 RUN_BETWEEN_SUBJECTS = True
 RUN_BETWEEN_NETWORKS = True
+RESULTS_DIR = '/nese/mit/group/evlab/u/cshain/results/fMRI_parcellate/stability'
 
 def get_rtype(nii, rtype='raw'):
     if rtype == 'raw':
@@ -150,9 +151,9 @@ if __name__ == '__main__':
                     row['r_%s' % rtype] = r
                 SvN_even_vs_odd.append(row)
         SvN_even_vs_odd = pd.DataFrame(SvN_even_vs_odd)
-        if not os.path.exists('stability'):
-            os.makedirs('stability')
-        SvN_even_vs_odd.to_csv(os.path.join('stability', 'SvN_even_vs_odd.csv'), index=False)
+        if not os.path.exists(RESULTS_DIR):
+            os.makedirs(RESULTS_DIR)
+        SvN_even_vs_odd.to_csv(os.path.join(RESULTS_DIR, 'SvN_even_vs_odd.csv'), index=False)
 
     if RUN_WITHIN_SUBECTS:
         print('Within subjects for Lang_S-N, LANG, LANA')
@@ -186,9 +187,9 @@ if __name__ == '__main__':
                     row['r_%s_sem' % rtype] = R.sem()
                 within_subjects.append(row)
         within_subjects = pd.DataFrame(within_subjects)
-        if not os.path.exists('stability'):
-            os.makedirs('stability')
-        within_subjects.to_csv(os.path.join('stability', 'within_subjects.csv'), index=False)
+        if not os.path.exists(RESULTS_DIR):
+            os.makedirs(RESULTS_DIR)
+        within_subjects.to_csv(os.path.join(RESULTS_DIR, 'within_subjects.csv'), index=False)
 
     if RUN_BETWEEN_SUBJECTS:
         print('Between subjects for Lang_S-N, LANG, LANA')
@@ -225,9 +226,9 @@ if __name__ == '__main__':
                 row['r_%s_sem' % rtype] = R.sem()
             between_subjects.append(row)
         between_subjects = pd.DataFrame(between_subjects)
-        if not os.path.exists('stability'):
-            os.makedirs('stability')
-        between_subjects.to_csv(os.path.join('stability', 'between_subjects.csv'), index=False)
+        if not os.path.exists(RESULTS_DIR):
+            os.makedirs(RESULTS_DIR)
+        between_subjects.to_csv(os.path.join(RESULTS_DIR, 'between_subjects.csv'), index=False)
 
     if RUN_BETWEEN_NETWORKS:
         print('Between networks')
@@ -273,7 +274,7 @@ if __name__ == '__main__':
             _between_networks = _between_networks.reset_index(drop=True)
             between_networks.append(_between_networks)
         between_networks = pd.concat(between_networks)
-        if not os.path.exists('stability'):
-            os.makedirs('stability')
-        between_networks.to_csv(os.path.join('stability', 'between_networks.csv'), index=False)
+        if not os.path.exists(RESULTS_DIR):
+            os.makedirs(RESULTS_DIR)
+        between_networks.to_csv(os.path.join(RESULTS_DIR, 'between_networks.csv'), index=False)
 
