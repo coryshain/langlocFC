@@ -79,7 +79,7 @@ if __name__ == '__main__':
     nii_paths = {}
     path2nii = {}
     for i, path in enumerate(args.config_paths):
-        sys.stderr.write('\r%d/%d' % (i + 1, len(args.config_paths)))
+        sys.stderr.write('\r  %d/%d' % (i + 1, len(args.config_paths)))
         sys.stderr.flush()
         with open(path, 'r') as f:
             cfg = yaml.safe_load(f)
@@ -93,6 +93,8 @@ if __name__ == '__main__':
             is_task = setname in TASKS
             if is_task:
                 filename = 'eval_%s.nii.gz'
+                if setname not in cfg['evaluate'][args.evaluation_id]['evaluation_atlases']:
+                    continue
                 nii_path = cfg['evaluate'][args.evaluation_id]['evaluation_atlases'][setname]
             else:
                 nii_path = os.path.join(parcellation_path, '%s_sub1.nii.gz' % setname)
