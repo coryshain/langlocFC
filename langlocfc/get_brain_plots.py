@@ -8,7 +8,7 @@ results_dir = '/nese/mit/group/evlab/u/cshain/results/fMRI_parcellate/nolangloc'
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser('Get brain plots for the best (highest even-odd sp corr) sessions in the dataset.')
-    parser.add_argument('-k', '--k', type=int, default=100, help='Number of best sessions to keep.')
+    parser.add_argument('-k', '--k', type=int, default=10, help='Number of best sessions to keep.')
     args = parser.parse_args()
 
     df = pd.read_csv(os.path.join('stability', 'SvN_even_vs_odd.csv'))
