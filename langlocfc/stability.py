@@ -93,6 +93,8 @@ if __name__ == '__main__':
             is_task = setname in TASKS
             if is_task:
                 filename = 'eval_%s.nii.gz'
+                if 'evaluation_atlases' not in cfg['evaluate'][args.evaluation_id]:
+                    continue
                 if setname not in cfg['evaluate'][args.evaluation_id]['evaluation_atlases']:
                     continue
                 nii_path = cfg['evaluate'][args.evaluation_id]['evaluation_atlases'][setname]
