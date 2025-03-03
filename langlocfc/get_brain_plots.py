@@ -20,6 +20,6 @@ if __name__ == '__main__':
     if not os.path.exists('brain_plots'):
         os.makedirs('brain_plots')
     for session in sessions:
-        in_path = os.path.join(results_dir, session, 'parcellate', 'main', 'plots', 'LANA_sub1_vs_Lang_S-N.png')
+        in_path = os.path.join(results_dir, session, 'parcellation', 'main', 'plots', 'LANA_sub1_vs_Lang_S-N.png')
         out_path = os.path.join('brain_plots', '%s.png' % session)
         os.system('cp %s %s' % (in_path, out_path))
