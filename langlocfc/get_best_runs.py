@@ -12,7 +12,7 @@ if __name__ == '__main__':
 
     df = pd.read_csv(os.path.join('stability', 'SvN_even_vs_odd.csv'))
     df = df.sort_values(by='r_raw', ascending=False)
-    df = df.head(args.k)['']
+    df = df.head(args.k)
     df['session'] = df.even_path.apply(lambda x: session_match.search(x).group(1))
     df = df['session', 'r_raw']
     if not os.path.exists('best_sessions'):
