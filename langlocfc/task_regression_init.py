@@ -88,7 +88,7 @@ if __name__ == '__main__':
                 else:
                     functionals = functionals.split()
             else:
-                functionals = [os.path.basename(x).split('-')[-1] for x in functionals]
+                functionals = [os.path.basename(x).split('-')[-2] for x in functionals]
             run_map = [int(x) for x in functionals]
         else:
             continue
