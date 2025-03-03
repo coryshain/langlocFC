@@ -3,7 +3,7 @@ import re
 import pandas as pd
 import argparse
 
-session_match = re.compile(r'SUBJECTS/([^\\]+)/')
+session_match = re.compile(r'SUBJECTS/([^/]+)/')
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser('Get the best (highest even-odd sp corr) sessions in the dataset.')
