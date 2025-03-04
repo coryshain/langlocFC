@@ -154,7 +154,7 @@ if __name__ == '__main__':
                 fc_zR=fc_mean,
                 fc_zR_sem=fc_sem
             )])
-            _cfg['output_dir'] = os.path.join(parcellate_output_dir, 'unresidualized')
+            _cfg['output_dir'] = os.path.join(parcellate_output_dir, 'unresidualized', sess_name)
             _cfg['sample'][sample_id]['functional_paths'] = nii_filenames
             parcellate_cfg_dir = os.path.join(results_dir, 'parcellate_cfg', 'unresidualized')
             if not os.path.exists(parcellate_cfg_dir):

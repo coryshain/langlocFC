@@ -9,9 +9,11 @@ plt.rcParams["font.size"] = 14
 PARCELLATE_PATH = '../../results/fMRI_parcellate'
 REF_PATH = (f'{PARCELLATE_PATH}/{{parcellation_type}}/plots/performance/'
              f'{{atlas}}_sub1_ref_sim.csv')
-CORR_PATH = (f'{PARCELLATE_PATH}/stability/between_networks.csv')
+CORR_PATH = (f'{PARCELLATE_PATH}/stability_{{parcellation_type}}/between_networks.csv')
 EVAL_PATH = (f'{PARCELLATE_PATH}/{{parcellation_type}}/plots/performance/'
              f'{{atlas}}_sub1_eval_{{eval_type}}.csv')
+GRID_PATH = (f'{PARCELLATE_PATH}/{{parcellation_type}}/plots/grid/'
+             f'{{atlas}}_sub1_{{eval_type}}_grid.csv')
 PARCELLATION_TYPES = ['nolangloc', 'nonlinguistic']
 EVAL_TYPES = ['sim', 'contrast']
 ATLAS_TYPES = {
@@ -98,6 +100,60 @@ FISHER = True
 EPS = 1e-3
 
 for parcellation_type in PARCELLATION_TYPES:
+    # Grid n voxels
+    atlas = 'LANG'
+    for eval_type in ('nvoxels_by_n_networks', 'eval_Lang_S-N_by_n_networks_sim'):
+        plot_x_base = np.arange(10, 201, 10)
+        cols = [str(x) for x in plot_x_base]
+        plt.gca().spines['top'].set_visible(False)
+        plt.gca().spines['right'].set_visible(False)
+        plt.gca().axhline(y=0, lw=1, c='k', alpha=1, zorder=-1)
+
+        df = pd.read_csv(GRID_PATH.format(parcellation_type=parcellation_type, atlas=atlas, eval_type=eval_type))
+        if 'label' in df:
+            sel = df.label == 'FC'
+            df = df[sel][cols]
+        if FISHER and eval_type.startswith('eval'):
+            df = np.arctanh(df * (1 - EPS))
+        _y = df.mean(axis=0).values
+        _y_err = df.sem(axis=0).values
+        _x = plot_x_base
+        linewidth = 2
+        label = '%s (FC)' % REFERENCE2NAME[atlas]
+        color = (1, 0, 1)
+        linestyle = '-'
+
+        plt.plot(
+            _x,
+            _y,
+            color=color,
+            linestyle=linestyle,
+            linewidth=linewidth,
+            zorder=0
+        )
+
+        plt.fill_between(
+            _x,
+            _y - _y_err,
+            _y + _y_err,
+            color=color,
+            alpha=0.3,
+            zorder=-1
+        )
+
+        plt.xlabel('N Networks')
+        if eval_type.startswith('nvoxels'):
+            ylabel = 'N Voxels'
+        else:
+            ylabel = 'FC to S-N z(r)'
+        plt.ylabel(ylabel)
+        if not os.path.exists('plots'):
+            os.makedirs('plots')
+        plt.gcf().set_size_inches(5, 3.75)
+        plt.tight_layout()
+        plt.savefig(f'plots/performance_{parcellation_type}_{atlas}_{eval_type}_grid{SUFFIX}')
+        plt.close('all')
+
     for atlas_type in ATLAS_TYPES:
         atlases = ATLAS_TYPES[atlas_type]
 
@@ -157,7 +213,7 @@ for parcellation_type in PARCELLATION_TYPES:
         plt.legend(bbox_to_anchor=(0.5, 1), loc='lower center', ncol=4, frameon=False, fontsize=12)
         if not os.path.exists('plots'):
             os.makedirs('plots')
-        plt.gcf().set_size_inches(8, 6)
+        plt.gcf().set_size_inches(6, 4.5)
         plt.tight_layout()
         plt.savefig(f'plots/performance_{parcellation_type}_{atlas_type}_networksim{SUFFIX}')
         plt.close('all')
@@ -218,7 +274,7 @@ for parcellation_type in PARCELLATION_TYPES:
         plt.legend(bbox_to_anchor=(0.5, 1), loc='lower center', ncol=4, frameon=False, fontsize=12)
         if not os.path.exists('plots'):
             os.makedirs('plots')
-        plt.gcf().set_size_inches(8, 6)
+        plt.gcf().set_size_inches(6, 4.5)
         plt.tight_layout()
         plt.savefig(f'plots/performance_{parcellation_type}_{atlas_type}_refsim{SUFFIX}')
         plt.close('all')
