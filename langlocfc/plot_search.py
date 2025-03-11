@@ -4,13 +4,13 @@ from PIL import ImageFont
 from PIL import ImageDraw
 
 RUN_TYPES = ('nolangloc', 'nonlinguistic')
-DEV_TYPES = (
-    'DevNobpTimecourse',
-    'DevBpTimecourse',
-    'DevConnRegions',
-    'DevConnRegionsBin',
-    'DevConnDownsample',
-    'DevConnDownsampleBin'
+SEARCH_TYPES = (
+    'SearchNobpTimecourse',
+    'SearchBpTimecourse',
+    'SearchConnRegions',
+    'SearchConnRegionsBin',
+    'SearchConnDownsample',
+    'SearchConnDownsampleBin'
 )
 MODEL_TYPES = ('LANG_sub1', 'LANA_sub1')
 METRIC_TYPES = ('sim', 'contrast')
@@ -23,15 +23,15 @@ if __name__ == '__main__':
         plots[model_type] = {}
         for run_type in RUN_TYPES:
             plots[model_type][run_type] = {}
-            for dev_type in DEV_TYPES:
-                _results_dir = os.path.join(results_dir, '%s%s' % (run_type, dev_type), 'plots', 'performance')
+            for search_type in SEARCH_TYPES:
+                _results_dir = os.path.join(results_dir, '%s%s' % (run_type, search_type), 'plots', 'performance')
                 for metric_type in METRIC_TYPES:
                     _plot_path = os.path.join(_results_dir, '%s_eval_%s.png' % (model_type, metric_type))
                     if metric_type not in plots[model_type][run_type]:
                         plots[model_type][run_type][metric_type] = {}
-                    plots[model_type][run_type][metric_type][dev_type] = Image.open(_plot_path)
+                    plots[model_type][run_type][metric_type][search_type] = Image.open(_plot_path)
                     if w is None:
-                        w, h = plots[model_type][run_type][metric_type][dev_type].size
+                        w, h = plots[model_type][run_type][metric_type][search_type].size
 
     pad = 150
     titlepad = 300
@@ -47,15 +47,15 @@ if __name__ == '__main__':
     for i, model_type in enumerate(MODEL_TYPES):
         for j, run_type in enumerate(RUN_TYPES):
             for k, metric_type in enumerate(METRIC_TYPES):
-                for l, dev_type in enumerate(DEV_TYPES):
+                for l, search_type in enumerate(SEARCH_TYPES):
                     if i == 0 and k == 0:
-                        # dev_type label
+                        # search_type label
                         txt = Image.new('RGB', (h, pad), color=(255, 255, 255))
                         draw = ImageDraw.Draw(txt)
-                        _, _, _w, _h = draw.textbbox((0, 0), dev_type, font=font3)
+                        _, _, _w, _h = draw.textbbox((0, 0), search_type, font=font3)
                         draw.text(
                             ((h - _w) / 2, (pad - _h) / 2),
-                            dev_type,
+                            search_type,
                             (0, 0, 0),
                             font=font3
                         )
@@ -102,6 +102,6 @@ if __name__ == '__main__':
 
                     x = (i * 4 + j * 2 + k) * w + (i * 3 + j + 1) * pad
                     y = l * h + pad * 2 + titlepad
-                    canvas.paste(plots[model_type][run_type][metric_type][dev_type], (x, y))
+                    canvas.paste(plots[model_type][run_type][metric_type][search_type], (x, y))
 
-    canvas.resize((_W, _H)).save('plot_dev.png')
+    canvas.resize((_W, _H)).save('plot_search.png')
