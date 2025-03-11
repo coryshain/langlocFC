@@ -32,9 +32,9 @@ ALL_REFERENCE = [
 TASKS = ['Lang_S-N', 'Lang_EVEN_S-N', 'Lang_ODD_S-N']
 RTYPES = ['raw', 'masked12', 'masked6']
 
-RUN_EVEN_VS_ODD = True
-RUN_WITHIN_SUBECTS = True
-RUN_BETWEEN_SUBJECTS = True
+RUN_EVEN_VS_ODD = False
+RUN_WITHIN_SUBECTS = False
+RUN_BETWEEN_SUBJECTS = False
 RUN_BETWEEN_NETWORKS = True
 RESULTS_DIR = '/nese/mit/group/evlab/u/cshain/results/fMRI_parcellate/stability'
 
