@@ -10,7 +10,8 @@ def process_cfg(path, run_type, search_type):
     with open(path, 'r') as f:
         cfg = yaml.safe_load(f)
     cfg['output_dir'] = cfg['output_dir'].replace(run_type, '%s%s' % (run_type, search_type))
-    del cfg['sample']['main']['n_networks']
+    if 'n_networks' in cfg['sample']['main']:
+        del cfg['sample']['main']['n_networks']
     if search_type == 'Main':
         cfg['grid'] = {'n_networks': list(range(5, 101, 5))}
     elif search_type == 'SearchNobpTimecourse':
