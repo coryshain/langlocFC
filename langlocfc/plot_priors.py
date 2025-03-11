@@ -180,15 +180,22 @@ def plot_priors():
     binary_path = os.path.join(resource_path, 'surfice', 'Surf_Ice', 'surfice.exe')
 
     with TemporaryDirectory() as tmp_dir_path:
-        for ref in ('LANG', 'LanA'):
+        for ref in ('LANG', 'LanA', 'LangFC', 'LangFCAll', 'LangFCDiff'):
             if ref == 'LANG':
                 ref_path = os.path.join(resource_path, 'DU15_LANG.nii.gz')
-            else:
+            elif ref == 'LanA':
                 ref_path = os.path.join(resource_path, 'LanA_n806.nii')
+            elif ref == 'LangFC':
+                ref_path = os.path.join('group_atlas_data', 'LANA_sub1.nii.gz')
+            elif ref == 'LangFCAll':
+                ref_path = os.path.join('group_atlas_data', 'LANA_all.nii.gz')
+            else:
+                ref_path = os.path.join('group_atlas_data', 'LANA_diff.nii.gz')
+
 
             output_path = os.path.join(tmp_dir_path, 'plots', 'atlas', f'{ref}_atlas_%s_%s.png')
 
-            plot_set = {'reference': {'color': (0, 0, 0, 0, 255, 0),
+            plot_set = {'reference': {'color': (0, 0, 0, 0, 0, 255),
                    'max': 1,
                    'min': 0,
                    'name': 'LANA',

@@ -33,7 +33,7 @@ ROIs = df.ROI.unique().tolist()
 lengths = [1, 2, 3, 4, 6, 12]
 ylims = {'': (-0.68, 3.5)}
 plot_basis = length2x(lengths)
-plot_dir = 'pdd_plots'
+plot_dir = os.path.join('plots', 'pdd')
 
 xtick_pos = plot_basis
 xtick_labels = [str(x) for x in lengths]

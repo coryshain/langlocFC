@@ -9,11 +9,12 @@ plt.rcParams["font.size"] = 14
 PARCELLATE_PATH = '../../results/fMRI_parcellate'
 REF_PATH = (f'{PARCELLATE_PATH}/{{parcellation_type}}/plots/performance/'
              f'{{atlas}}_sub1_ref_sim.csv')
-CORR_PATH = (f'{PARCELLATE_PATH}/stability_{{parcellation_type}}/between_networks.csv')
+CORR_PATH = f'{PARCELLATE_PATH}/stability_{{parcellation_type}}/between_networks.csv'
 EVAL_PATH = (f'{PARCELLATE_PATH}/{{parcellation_type}}/plots/performance/'
              f'{{atlas}}_sub1_eval_{{eval_type}}.csv')
 GRID_PATH = (f'{PARCELLATE_PATH}/{{parcellation_type}}/plots/grid/'
              f'{{atlas}}_sub1_{{eval_type}}_grid.csv')
+STABILITY_DIR = f'{PARCELLATE_PATH}/stability_{{parcellation_type}}/'
 PARCELLATION_TYPES = ['nolangloc', 'nonlinguistic']
 EVAL_TYPES = ['sim', 'contrast']
 ATLAS_TYPES = {
@@ -27,14 +28,14 @@ EVALS = [
     'Lang_S-N', 'Lang_I-D', 'ToM_bel-pho', 'ToM_NV_ment-phys', 'SpatWM_H-E', 'Math_H-E', 'Music_I-B',
     'Vis_Faces-Objects', 'Vis_Bodies-Objects', 'Vis_Scenes-Objects'
 ]
-EVAL_CLASSES = ['Language', 'Theory of Mind', 'Executive', 'Music', 'Vision']
+EVAL_CLASSES = ['Language', 'Theory of Mind', 'Executive', 'Numerical', 'Music', 'Vision']
 EVAL2NAME = {
     'Lang_S-N': 'Language (reading)',
     'Lang_I-D': 'Language (listening)',
     'ToM_bel-pho': 'Theory of Mind (verbal)',
     'ToM_NV_ment-phys': 'Theory of Mind (non-verbal)',
     'SpatWM_H-E': 'Executive (working memory)',
-    'Math_H-E': 'Executive (math)',
+    'Math_H-E': 'Numerical (math)',
     'Music_I-B': 'Music (intact vs. scrambled)',
     'Vis_Faces-Objects': 'Vision (faces)',
     'Vis_Bodies-Objects': 'Vision (bodies)',
@@ -46,7 +47,7 @@ EVAL2CLASS = {
     'ToM_bel-pho': 'Theory of Mind',
     'ToM_NV_ment-phys': 'Theory of Mind',
     'SpatWM_H-E': 'Executive',
-    'Math_H-E': 'Executive',
+    'Math_H-E': 'Numerical',
     'Music_I-B': 'Music',
     'Vis_Faces-Objects': 'Vision',
     'Vis_Bodies-Objects': 'Vision',
@@ -56,6 +57,7 @@ CLASS2COLOR = {
     'Language': (135, 83, 141),
     'Theory of Mind': (132, 60, 47),
     'Executive': (69, 153, 67),
+    'Numerical': (0, 170, 172),
     'Music': (135, 209, 209),
     'Vision': (248, 152, 78)
 }
@@ -98,61 +100,145 @@ REFERENCE2NAME = {
 SUFFIX = '.png'
 FISHER = True
 EPS = 1e-3
+DPI = 200
 
 for parcellation_type in PARCELLATION_TYPES:
-    # Grid n voxels
-    atlas = 'LANG'
-    for eval_type in ('nvoxels_by_n_networks', 'eval_Lang_S-N_by_n_networks_sim'):
-        plot_x_base = np.arange(10, 201, 10)
-        cols = [str(x) for x in plot_x_base]
+    # Stability
+    if parcellation_type == 'nolangloc':
+        ylim = None
+        x_delta = 0.4
+        plot_x_base = np.array((0, 2))
         plt.gca().spines['top'].set_visible(False)
         plt.gca().spines['right'].set_visible(False)
         plt.gca().axhline(y=0, lw=1, c='k', alpha=1, zorder=-1)
 
-        df = pd.read_csv(GRID_PATH.format(parcellation_type=parcellation_type, atlas=atlas, eval_type=eval_type))
-        if 'label' in df:
-            sel = df.label == 'FC'
-            df = df[sel][cols]
-        if FISHER and eval_type.startswith('eval'):
-            df = np.arctanh(df * (1 - EPS))
-        _y = df.mean(axis=0).values
-        _y_err = df.sem(axis=0).values
-        _x = plot_x_base
-        linewidth = 2
-        label = '%s (FC)' % REFERENCE2NAME[atlas]
-        color = (1, 0, 1)
-        linestyle = '-'
-
-        plt.plot(
-            _x,
-            _y,
-            color=color,
-            linestyle=linestyle,
-            linewidth=linewidth,
-            zorder=0
+        within = pd.read_csv(
+            os.path.join(STABILITY_DIR.format(parcellation_type=parcellation_type), 'within_subjects_summary.csv')
         )
-
-        plt.fill_between(
-            _x,
-            _y - _y_err,
-            _y + _y_err,
-            color=color,
-            alpha=0.3,
-            zorder=-1
+        between = pd.read_csv(
+            os.path.join(STABILITY_DIR.format(parcellation_type=parcellation_type), 'between_subjects.csv')
         )
+        for a, mask_type in enumerate(('raw', 'masked6')):
+            for k, setname in enumerate(('Lang_S-N', 'LANA')):
+                _x = plot_x_base + (a * 2 + k) * x_delta
+                col = 'r_%s' % mask_type
+                semcol = '%s_sem' % col
+                _within = within[within.setname == setname]
+                _between = between[between.setname == setname]
+                _y = np.concatenate([
+                    _within[col].values, _between[col].values
+                ])
+                _y_err = np.concatenate([
+                    _within[semcol].values, _between[semcol].values
+                ])
 
-        plt.xlabel('N Networks')
-        if eval_type.startswith('nvoxels'):
-            ylabel = 'N Voxels'
-        else:
-            ylabel = 'FC to S-N z(r)'
+                _c = 'black'
+                if setname == 'Lang_S-N':
+                    label = 'S-N'
+                    color = 'none'
+                    edgecolor = _c
+                    if mask_type == 'raw':
+                        label += ' (whole)'
+                        linestyle = 'dotted'
+                    else:
+                        label += ' (masked)'
+                        linestyle = '-'
+                else:
+                    label = 'LangFC'
+                    color = _c
+                    edgecolor = _c
+                    if mask_type == 'raw':
+                        label += ' (whole)'
+                        linestyle = 'dotted'
+                    else:
+                        label += ' (masked)'
+                        linestyle = '-'
+
+                linewidth = 2
+
+                plt.bar(
+                    _x,
+                    _y,
+                    yerr=_y_err,
+                    label=label,
+                    width=x_delta,
+                    capsize=0,
+                    color=color,
+                    edgecolor=edgecolor,
+                    ecolor=edgecolor,
+                    linestyle=linestyle,
+                    linewidth=linewidth,
+                    error_kw=dict(linewidth=linewidth),
+                    zorder=0
+                )
+        tick_shift = x_delta * (2 - 0.5)
+        plt.xticks(plot_x_base + tick_shift, ['Within', 'Between'], rotation=45, ha='right')
+        ylabel = 'z(r)'
         plt.ylabel(ylabel)
+        if ylim is not None:
+            plt.ylim(ylim)
+        plt.legend(bbox_to_anchor=(0.5, 1), loc='lower center', ncol=2, frameon=False, fontsize=12)
         if not os.path.exists('plots'):
             os.makedirs('plots')
-        plt.gcf().set_size_inches(5, 3.75)
+        plt.gcf().set_size_inches(4, 4)
         plt.tight_layout()
-        plt.savefig(f'plots/performance_{parcellation_type}_{atlas}_{eval_type}_grid{SUFFIX}')
+        plt.savefig(f'plots/stability_within_between{SUFFIX}', dpi=DPI)
         plt.close('all')
+
+
+    # Grid n voxels
+    for atlas in ('LANG', 'LANA'):
+        for eval_type in ('nvoxels_by_n_networks', 'eval_Lang_S-N_by_n_networks_sim'):
+            plot_x_base = np.arange(10, 201, 10)
+            cols = [str(x) for x in plot_x_base]
+            plt.gca().spines['top'].set_visible(False)
+            plt.gca().spines['right'].set_visible(False)
+            plt.gca().axhline(y=0, lw=1, c='k', alpha=1, zorder=-1)
+
+            df = pd.read_csv(GRID_PATH.format(parcellation_type=parcellation_type, atlas=atlas, eval_type=eval_type))
+            if 'label' in df:
+                sel = df.label == 'FC'
+                df = df[sel][cols]
+            if FISHER and eval_type.startswith('eval'):
+                df = np.arctanh(df * (1 - EPS))
+            _y = df.mean(axis=0).values
+            _y_err = df.sem(axis=0).values
+            _x = plot_x_base
+            linewidth = 2
+            label = '%s (FC)' % REFERENCE2NAME[atlas]
+            color = (1, 0, 1)
+            linestyle = '-'
+
+            plt.plot(
+                _x,
+                _y,
+                color=color,
+                linestyle=linestyle,
+                linewidth=linewidth,
+                zorder=0
+            )
+
+            plt.fill_between(
+                _x,
+                _y - _y_err,
+                _y + _y_err,
+                color=color,
+                alpha=0.3,
+                zorder=-1
+            )
+
+            plt.xlabel('N Networks')
+            if eval_type.startswith('nvoxels'):
+                ylabel = 'N Voxels'
+            else:
+                ylabel = 'FC to S-N z(r)'
+            plt.ylabel(ylabel)
+            if not os.path.exists('plots'):
+                os.makedirs('plots')
+            plt.gcf().set_size_inches(5, 3.75)
+            plt.tight_layout()
+            plt.savefig(f'plots/performance_{parcellation_type}_{atlas}_{eval_type}_grid{SUFFIX}', dpi=DPI)
+            plt.close('all')
 
     for atlas_type in ATLAS_TYPES:
         atlases = ATLAS_TYPES[atlas_type]
@@ -215,7 +301,7 @@ for parcellation_type in PARCELLATION_TYPES:
             os.makedirs('plots')
         plt.gcf().set_size_inches(6, 4.5)
         plt.tight_layout()
-        plt.savefig(f'plots/performance_{parcellation_type}_{atlas_type}_networksim{SUFFIX}')
+        plt.savefig(f'plots/performance_{parcellation_type}_{atlas_type}_networksim{SUFFIX}', dpi=DPI)
         plt.close('all')
 
         # Reference atlases
@@ -276,7 +362,7 @@ for parcellation_type in PARCELLATION_TYPES:
             os.makedirs('plots')
         plt.gcf().set_size_inches(6, 4.5)
         plt.tight_layout()
-        plt.savefig(f'plots/performance_{parcellation_type}_{atlas_type}_refsim{SUFFIX}')
+        plt.savefig(f'plots/performance_{parcellation_type}_{atlas_type}_refsim{SUFFIX}', dpi=DPI)
         plt.close('all')
 
 
@@ -353,16 +439,16 @@ for parcellation_type in PARCELLATION_TYPES:
                 plt.ylim(ylim)
             plt.legend(bbox_to_anchor=(0.5, 1), loc='lower center', ncol=4, frameon=False, fontsize=12)
             legend = plt.gca().get_legend()
-            for i in range(len(legend.legendHandles)):
-                facecolor = legend.legendHandles[i].get_facecolor()
+            for i in range(len(legend.legend_handles)):
+                facecolor = legend.legend_handles[i].get_facecolor()
                 if facecolor[-1] > 0:
-                    legend.legendHandles[i].set_facecolor((0.2, 0.2, 0.2))
-                legend.legendHandles[i].set_edgecolor((0.2, 0.2, 0.2))
+                    legend.legend_handles[i].set_facecolor((0.2, 0.2, 0.2))
+                legend.legend_handles[i].set_edgecolor((0.2, 0.2, 0.2))
             if not os.path.exists('plots'):
                 os.makedirs('plots')
-            plt.gcf().set_size_inches(8, 6)
+            plt.gcf().set_size_inches(7, 5.25)
             plt.tight_layout()
-            plt.savefig(f'plots/performance_{parcellation_type}_{atlas_type}_{eval_type}{SUFFIX}')
+            plt.savefig(f'plots/performance_{parcellation_type}_{atlas_type}_{eval_type}{SUFFIX}', dpi=DPI)
             plt.close('all')
 
         # Grid
