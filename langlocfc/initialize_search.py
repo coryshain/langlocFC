@@ -10,11 +10,12 @@ def process_cfg(path, run_type, search_type):
     with open(path, 'r') as f:
         cfg = yaml.safe_load(f)
     cfg['output_dir'] = cfg['output_dir'].replace(run_type, '%s%s' % (run_type, search_type))
-    if 'n_networks' in cfg['sample']['main']:
-        del cfg['sample']['main']['n_networks']
-    if search_type == 'Main':
-        cfg['grid'] = {'n_networks': list(range(5, 101, 5))}
-    elif search_type == 'SearchNobpTimecourse':
+    cfg['sample']['main']['n_networks'] = 100
+    if 'grid' in cfg:
+        del cfg['grid']
+    if 'aggregate' in cfg:
+        del cfg['aggregate']
+    if search_type == 'SearchNobpTimecourse':
         cfg['sample']['low_pass'] = None
         cfg['sample']['high_pass'] = None
         cfg['sample']['use_connectivity_profile'] = False
@@ -91,7 +92,7 @@ if __name__ == '__main__':
                 search_types = ('SearchNobpTimecourse', 'SearchBpTimecourse', 'SearchConnRegions', 'SearchConnRegionsBin', 'SearchConnDownsample', 'SearchConnDownsampleBin')
                 assert len(sessions_by_subject[subject]) == 1, 'Got too many sessions: %s' % sessions_by_subject[subject]
             else:
-                search_types = ('Main',)
+                continue
             for search_type in search_types:
                 out_dir = os.path.join(CFG_PATH, '%s%s' % (run_type, search_type))
                 out_path = os.path.join(out_dir, session)
