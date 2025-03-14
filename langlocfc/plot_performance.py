@@ -15,7 +15,7 @@ EVAL_PATH = (f'{PARCELLATE_PATH}/{{parcellation_type}}/plots/performance/'
 GRID_PATH = (f'{PARCELLATE_PATH}/{{parcellation_type}}/plots/grid/'
              f'{{atlas}}_sub1_{{eval_type}}_grid.csv')
 STABILITY_DIR = f'{PARCELLATE_PATH}/stability_{{parcellation_type}}/'
-PARCELLATION_TYPES = ['nolangloc', 'nonlinguistic']
+PARCELLATION_TYPES = ['nolangloc', 'nonlinguistic', 'residualized', 'unresidualized']
 EVAL_TYPES = ['sim', 'contrast']
 ATLAS_TYPES = {
     'Language': ['LANG', 'LANA'],
@@ -187,122 +187,124 @@ for parcellation_type in PARCELLATION_TYPES:
 
 
     # Grid n voxels
-    for atlas in ('LANG', 'LANA'):
-        for eval_type in ('nvoxels_by_n_networks', 'eval_Lang_S-N_by_n_networks_sim'):
-            plot_x_base = np.arange(10, 201, 10)
-            cols = [str(x) for x in plot_x_base]
-            plt.gca().spines['top'].set_visible(False)
-            plt.gca().spines['right'].set_visible(False)
-            plt.gca().axhline(y=0, lw=1, c='k', alpha=1, zorder=-1)
+    if parcellation_type in ('nolangloc', 'nonlinguistic'):
+        for atlas in ('LANG', 'LANA'):
+            for eval_type in ('nvoxels_by_n_networks', 'eval_Lang_S-N_by_n_networks_sim'):
+                plot_x_base = np.arange(10, 201, 10)
+                cols = [str(x) for x in plot_x_base]
+                plt.gca().spines['top'].set_visible(False)
+                plt.gca().spines['right'].set_visible(False)
+                plt.gca().axhline(y=0, lw=1, c='k', alpha=1, zorder=-1)
 
-            df = pd.read_csv(GRID_PATH.format(parcellation_type=parcellation_type, atlas=atlas, eval_type=eval_type))
-            if 'label' in df:
-                sel = df.label == 'FC'
-                df = df[sel][cols]
-            if FISHER and eval_type.startswith('eval'):
-                df = np.arctanh(df * (1 - EPS))
-            _y = df.mean(axis=0).values
-            _y_err = df.sem(axis=0).values
-            _x = plot_x_base
-            linewidth = 2
-            label = '%s (FC)' % REFERENCE2NAME[atlas]
-            color = (1, 0, 1)
-            linestyle = '-'
+                df = pd.read_csv(GRID_PATH.format(parcellation_type=parcellation_type, atlas=atlas, eval_type=eval_type))
+                if 'label' in df:
+                    sel = df.label == 'FC'
+                    df = df[sel][cols]
+                if FISHER and eval_type.startswith('eval'):
+                    df = np.arctanh(df * (1 - EPS))
+                _y = df.mean(axis=0).values
+                _y_err = df.sem(axis=0).values
+                _x = plot_x_base
+                linewidth = 2
+                label = '%s (FC)' % REFERENCE2NAME[atlas]
+                color = (1, 0, 1)
+                linestyle = '-'
 
-            plt.plot(
-                _x,
-                _y,
-                color=color,
-                linestyle=linestyle,
-                linewidth=linewidth,
-                zorder=0
-            )
+                plt.plot(
+                    _x,
+                    _y,
+                    color=color,
+                    linestyle=linestyle,
+                    linewidth=linewidth,
+                    zorder=0
+                )
 
-            plt.fill_between(
-                _x,
-                _y - _y_err,
-                _y + _y_err,
-                color=color,
-                alpha=0.3,
-                zorder=-1
-            )
+                plt.fill_between(
+                    _x,
+                    _y - _y_err,
+                    _y + _y_err,
+                    color=color,
+                    alpha=0.3,
+                    zorder=-1
+                )
 
-            plt.xlabel('N Networks')
-            if eval_type.startswith('nvoxels'):
-                ylabel = 'N Voxels'
-            else:
-                ylabel = 'FC to S-N z(r)'
-            plt.ylabel(ylabel)
-            if not os.path.exists('plots'):
-                os.makedirs('plots')
-            plt.gcf().set_size_inches(5, 3.75)
-            plt.tight_layout()
-            plt.savefig(f'plots/performance_{parcellation_type}_{atlas}_{eval_type}_grid{SUFFIX}', dpi=DPI)
-            plt.close('all')
+                plt.xlabel('N Networks')
+                if eval_type.startswith('nvoxels'):
+                    ylabel = 'N Voxels'
+                else:
+                    ylabel = 'FC to S-N z(r)'
+                plt.ylabel(ylabel)
+                if not os.path.exists('plots'):
+                    os.makedirs('plots')
+                plt.gcf().set_size_inches(5, 3.75)
+                plt.tight_layout()
+                plt.savefig(f'plots/performance_{parcellation_type}_{atlas}_{eval_type}_grid{SUFFIX}', dpi=DPI)
+                plt.close('all')
 
     for atlas_type in ATLAS_TYPES:
         atlases = ATLAS_TYPES[atlas_type]
 
         # FC atlases
-        plot_x_base = np.arange(len(ALL_REFERENCE))
-        plt.gca().spines['top'].set_visible(False)
-        plt.gca().spines['right'].set_visible(False)
-        plt.gca().axhline(y=0, lw=1, c='k', alpha=1, zorder=-1)
-        x_delta = 0.8 / len(atlases)
+        if parcellation_type in ('nolangloc', 'nonlinguistic'):
+            plot_x_base = np.arange(len(ALL_REFERENCE))
+            plt.gca().spines['top'].set_visible(False)
+            plt.gca().spines['right'].set_visible(False)
+            plt.gca().axhline(y=0, lw=1, c='k', alpha=1, zorder=-1)
+            x_delta = 0.8 / len(atlases)
 
-        if atlas_type == 'Language':
-            ylim = (-0.1, 2.5)
-        else:
-            ylim = None
-
-        df = pd.read_csv(CORR_PATH.format(parcellation_type=parcellation_type))
-        for a, atlas in enumerate(atlases):
-            sel = (df.network == atlas) & (df.rtype == 'raw')
-            _df = df[sel]
-            assert _df.shape[0] == 1, 'Multiple rows for %s' % atlas
-            _df = _df.iloc[0]
-            _y = _df[ALL_REFERENCE].values
-            _y_err = _df[[x + '_sem' for x in ALL_REFERENCE]].values
-            _x = plot_x_base + a * x_delta
-            if atlas == 'LANG':
-                _c = (0.5, 0.5, 0.5)
+            if atlas_type == 'Language':
+                ylim = (-0.1, 2.5)
             else:
-                _c = (0.2, 0.2, 0.2)
-            linewidth = 2
-            label = '%s (FC)' % REFERENCE2NAME[atlas]
-            color = _c
-            edgecolor = _c
-            linestyle = '-'
+                ylim = None
 
-            plt.bar(
-                _x,
-                _y,
-                yerr=_y_err,
-                label=label,
-                width=x_delta,
-                capsize=0,
-                color=color,
-                edgecolor=edgecolor,
-                ecolor=edgecolor,
-                linestyle=linestyle,
-                linewidth=linewidth,
-                error_kw=dict(linewidth=linewidth),
-                zorder=0
-            )
+            df = pd.read_csv(CORR_PATH.format(parcellation_type=parcellation_type))
+            for a, atlas in enumerate(atlases):
+                sel = (df.network == atlas) & (df.rtype == 'raw')
+                _df = df[sel]
+                assert _df.shape[0] == 1, 'Multiple rows for %s' % atlas
+                _df = _df.iloc[0]
+                _y = _df[ALL_REFERENCE].values
+                _y_err = _df[[x + '_sem' for x in ALL_REFERENCE]].values
+                _x = plot_x_base + a * x_delta
+                if atlas == 'LANG':
+                    _c = (0.5, 0.5, 0.5)
+                else:
+                    _c = (0.2, 0.2, 0.2)
+                linewidth = 2
+                label = '%s (FC)' % REFERENCE2NAME[atlas]
+                color = _c
+                edgecolor = _c
+                linestyle = '-'
 
-        tick_shift = x_delta * (len(atlases) - 0.5) / 2
-        plt.xticks(plot_x_base + tick_shift, [REFERENCE2NAME[x] for x in ALL_REFERENCE], rotation=45, ha='right')
-        ylabel = 'z(r)'
-        plt.ylabel(ylabel)
-        if ylim is not None:
-            plt.ylim(ylim)
-        plt.legend(bbox_to_anchor=(0.5, 1), loc='lower center', ncol=4, frameon=False, fontsize=12)
-        if not os.path.exists('plots'):
-            os.makedirs('plots')
-        plt.gcf().set_size_inches(6, 4.5)
-        plt.tight_layout()
-        plt.savefig(f'plots/performance_{parcellation_type}_{atlas_type}_networksim{SUFFIX}', dpi=DPI)
-        plt.close('all')
+                plt.bar(
+                    _x,
+                    _y,
+                    yerr=_y_err,
+                    label=label,
+                    width=x_delta,
+                    capsize=0,
+                    color=color,
+                    edgecolor=edgecolor,
+                    ecolor=edgecolor,
+                    linestyle=linestyle,
+                    linewidth=linewidth,
+                    error_kw=dict(linewidth=linewidth),
+                    zorder=0
+                )
+
+            tick_shift = x_delta * (len(atlases) - 0.5) / 2
+            plt.xticks(plot_x_base + tick_shift, [REFERENCE2NAME[x] for x in ALL_REFERENCE], rotation=45, ha='right')
+            ylabel = 'z(r)'
+            plt.ylabel(ylabel)
+            if ylim is not None:
+                plt.ylim(ylim)
+            plt.legend(bbox_to_anchor=(0.5, 1), loc='lower center', ncol=4, frameon=False, fontsize=12)
+            if not os.path.exists('plots'):
+                os.makedirs('plots')
+            plt.gcf().set_size_inches(6, 4.5)
+            plt.tight_layout()
+            plt.savefig(f'plots/performance_{parcellation_type}_{atlas_type}_networksim{SUFFIX}', dpi=DPI)
+            plt.close('all')
 
         # Reference atlases
         plot_x_base = np.arange(len(ALL_REFERENCE))
@@ -376,7 +378,10 @@ for parcellation_type in PARCELLATION_TYPES:
 
             if atlas_type == 'Language':
                 if eval_type == 'sim':
-                    ylim = (-0.15, 0.4)
+                    if 'residualized' in parcellation_type:
+                        ylim = (-0.15, 0.45)
+                    else:
+                        ylim = (-0.15, 0.4)
                 else:
                     ylim = (-0.7, 3.2)
             else:

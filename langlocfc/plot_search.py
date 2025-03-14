@@ -1,107 +1,212 @@
 import os
-from PIL import Image
-from PIL import ImageFont
-from PIL import ImageDraw
+import pandas as pd
+import numpy as np
+from matplotlib import pyplot as plt
+import seaborn as sns
 
-RUN_TYPES = ('nolangloc', 'nonlinguistic')
-SEARCH_TYPES = (
-    'SearchNobpTimecourse',
-    'SearchBpTimecourse',
-    'SearchConnRegions',
-    'SearchConnRegionsBin',
-    'SearchConnDownsample',
-    'SearchConnDownsampleBin'
-)
-MODEL_TYPES = ('LANG_sub1', 'LANA_sub1')
-METRIC_TYPES = ('sim', 'contrast')
-results_dir = '../../results/fMRI_parcellation'
+plt.rcParams["font.family"] = "Arial"
+plt.rcParams["font.size"] = 14
 
-if __name__ == '__main__':
-    plots = {}
-    w = h = None
-    for model_type in MODEL_TYPES:
-        plots[model_type] = {}
-        for run_type in RUN_TYPES:
-            plots[model_type][run_type] = {}
-            for search_type in SEARCH_TYPES:
-                _results_dir = os.path.join(results_dir, '%s%s' % (run_type, search_type), 'plots', 'performance')
-                for metric_type in METRIC_TYPES:
-                    _plot_path = os.path.join(_results_dir, '%s_eval_%s.png' % (model_type, metric_type))
-                    if metric_type not in plots[model_type][run_type]:
-                        plots[model_type][run_type][metric_type] = {}
-                    plots[model_type][run_type][metric_type][search_type] = Image.open(_plot_path)
-                    if w is None:
-                        w, h = plots[model_type][run_type][metric_type][search_type].size
+PARCELLATE_PATH = '../../results/fMRI_parcellate'
+REF_PATH = (f'{PARCELLATE_PATH}/{{parcellation_type}}/plots/{{runK}}performance/'
+             f'{{atlas}}_sub1_ref_sim.csv')
+CORR_PATH = f'{PARCELLATE_PATH}/stability_runs/multisession_stability_summary_LANA.csv'
+EVAL_PATH = (f'{PARCELLATE_PATH}/{{parcellation_type}}/plots/{{runK}}performance/'
+             f'{{atlas}}_sub1_eval_{{eval_type}}.csv')
+GRID_PATH = (f'{PARCELLATE_PATH}/{{parcellation_type}}/plots/grid/'
+             f'{{atlas}}_sub1_{{eval_type}}_grid.csv')
+STABILITY_DIR = f'{PARCELLATE_PATH}/stability_{{parcellation_type}}/'
+PARCELLATION_TYPES = [
+    'nolanglocSearchBpTimecourse',
+    'nolanglocSearchConnDownsample',
+    'nolanglocSearchConnDownsampleBin',
+    'nolanglocSearchConnRegions',
+    'nolanglocSearchConnRegionsBin',
+    'nolanglocSearchNobpTimecourse',
+    'nonlinguisticSearchBpTimecourse',
+    'nonlinguisticSearchConnDownsample',
+    'nonlinguisticSearchConnDownsampleBin',
+    'nonlinguisticSearchConnRegions',
+    'nonlinguisticSearchConnRegionsBin',
+    'nonlinguisticSearchNobpTimecourse'
+]
+EVAL_TYPES = ['sim', 'contrast']
+ATLAS_TYPES = {
+    'Language': ['LANG', 'LANA'],
+}
+EVALS = [
+    'Lang_S-N', 'Lang_I-D', 'ToM_bel-pho', 'ToM_NV_ment-phys', 'SpatWM_H-E', 'Math_H-E',
+    'Vis_Faces-Objects', 'Vis_Bodies-Objects', 'Vis_Scenes-Objects'
+]
+EVAL_CLASSES = ['Language', 'Theory of Mind', 'Executive', 'Music', 'Vision']
+EVAL2NAME = {
+    'Lang_S-N': 'Language (reading)',
+    'Lang_I-D': 'Language (listening)',
+    'ToM_bel-pho': 'Theory of Mind (verbal)',
+    'ToM_NV_ment-phys': 'Theory of Mind (non-verbal)',
+    'SpatWM_H-E': 'Executive (working memory)',
+    'Math_H-E': 'Numerical (math)',
+    'Music_I-B': 'Music (intact vs. scrambled)',
+    'Vis_Faces-Objects': 'Vision (faces)',
+    'Vis_Bodies-Objects': 'Vision (bodies)',
+    'Vis_Scenes-Objects': 'Vision (scenes)'
+}
+EVAL2CLASS = {
+    'Lang_S-N': 'Language',
+    'Lang_I-D': 'Language',
+    'ToM_bel-pho': 'Theory of Mind',
+    'ToM_NV_ment-phys': 'Theory of Mind',
+    'SpatWM_H-E': 'Executive',
+    'Math_H-E': 'Numerical',
+    'Music_I-B': 'Music',
+    'Vis_Faces-Objects': 'Vision',
+    'Vis_Bodies-Objects': 'Vision',
+    'Vis_Scenes-Objects': 'Vision'
+}
+CLASS2COLOR = {
+    'Language': (135, 83, 141),
+    'Theory of Mind': (132, 60, 47),
+    'Executive': (69, 153, 67),
+    'Numerical': (0, 170, 172),
+    'Music': (135, 209, 209),
+    'Vision': (248, 152, 78)
+}
+ALL_REFERENCE = [
+    'LANG',
+    'LANA',
+]
+REFERENCE2NAME = {
+    'LANG': 'LANG',
+    'LANA': 'LanA',
+    'FPN_A': 'FPN-A',
+    'FPN_B': 'FPN-B',
+    'DN_A': 'DN-A',
+    'DN_B': 'DN-B',
+    'CG_OP': 'CG-OP',
+    'SAL_PMN': 'SAL/PMN',
+    'dATN_A': 'dATN-A',
+    'dATN_B': 'dATN-B',
+    'AUD': 'AUD',
+    'PM_PPr': 'PM-PPr',
+    'SMOT_A': 'SMOT-A',
+    'SMOT_B': 'SMOT-B',
+    'VIS_C': 'VIS-C',
+    'VIS_P': 'VIS-P',
+}
+SUFFIX = '.png'
+FISHER = True
+EPS = 1e-3
+DPI = 200
 
-    pad = 150
-    titlepad = 300
-    W = w * 8 + pad * 6
-    H = h * 6 + pad * 4 + titlepad
-    ratio = 2000 / W
-    _W, _H = int(W * ratio), int(H * ratio)
+# Correlations
+df = pd.read_csv(CORR_PATH)
+df = df.set_index('runK')
+df = df.rename(int, axis=1)
+df = np.tanh(df)
 
-    font1 = ImageFont.truetype("Arial", w // 10)
-    font2 = ImageFont.truetype("Arial", w // 15)
-    font3 = ImageFont.truetype("Arial", w // 20)
-    canvas = Image.new('RGB', (W, H), color=(255, 255, 255))
-    for i, model_type in enumerate(MODEL_TYPES):
-        for j, run_type in enumerate(RUN_TYPES):
-            for k, metric_type in enumerate(METRIC_TYPES):
-                for l, search_type in enumerate(SEARCH_TYPES):
-                    if i == 0 and k == 0:
-                        # search_type label
-                        txt = Image.new('RGB', (h, pad), color=(255, 255, 255))
-                        draw = ImageDraw.Draw(txt)
-                        _, _, _w, _h = draw.textbbox((0, 0), search_type, font=font3)
-                        draw.text(
-                            ((h - _w) / 2, (pad - _h) / 2),
-                            search_type,
-                            (0, 0, 0),
-                            font=font3
-                        )
-                        txt = txt.rotate(90, expand=1)
-                        canvas.paste(txt, (pad, l * h + pad + titlepad))
-                    if l == 0:
-                        # metric_type label
-                        txt = Image.new('RGB', (w, pad), color=(255, 255, 255))
-                        draw = ImageDraw.Draw(txt)
-                        _, _, _w, _h = draw.textbbox((0, 0), metric_type, font=font3)
-                        draw.text(
-                            ((w - _w) / 2, (pad - _h) / 2),
-                            metric_type,
-                            (0, 0, 0),
-                            font=font3
-                        )
-                        canvas.paste(txt, ((i * 4 + j * 2 + k) * w + (i * 3 + j + 1) * pad, pad + titlepad))
+sns.heatmap(df)
+plt.xlabel('N Runs')
+plt.ylabel('N Runs')
+plt.gcf().set_size_inches(3.5, 2.9)
+plt.tight_layout()
+plt.savefig(f'plots/runwise_correlations{SUFFIX}', dpi=DPI)
+plt.close('all')
 
-                        # run_type label
-                        if k == 0:
-                            txt = Image.new('RGB', (w * 2, pad), color=(255, 255, 255))
-                            draw = ImageDraw.Draw(txt)
-                            _, _, _w, _h = draw.textbbox((0, 0), run_type, font=font2)
-                            draw.text(
-                                ((w * 2 - _w) / 2, (pad - _h) / 2),
-                                run_type,
-                                (0, 0, 0),
-                                font=font2
-                            )
-                            canvas.paste(txt, ((i * 4 + j * 2 + k) * w + (i * 3 + j + 1) * pad, titlepad))
+for parcellation_type in PARCELLATION_TYPES:
+    if 'multisession' in parcellation_type:
+        runK = parcellation_type[-2:] + '/'
+        parcellation_name = parcellation_type[:-2]
+    else:
+        runK = ''
+        parcellation_name = parcellation_type
+    for atlas_type in ATLAS_TYPES:
+        # atlases = ATLAS_TYPES[atlas_type]
+        atlases = ['LANA']
 
-                        # model_type label
-                        if k == 0 and j == 0:
-                            txt = Image.new('RGB', (w * 4, titlepad), color=(255, 255, 255))
-                            draw = ImageDraw.Draw(txt)
-                            _, _, _w, _h = draw.textbbox((0, 0), model_type, font=font1)
-                            draw.text(
-                                ((w * 4 - _w) / 2, (pad - _h) / 2),
-                                model_type,
-                                (0, 0, 0),
-                                font=font1
-                            )
-                            canvas.paste(txt, ((i * 4 + j * 2 + k) * w + (i * 3 + j + 1) * pad, 0))
+        # Evaluation atlases
+        # x_delta = 0.8 / (len(atlases) * 2)
+        x_delta = 0.8
+        for eval_type in EVAL_TYPES:
+            plot_x_base = np.arange(len(EVALS))
+            plt.gca().spines['top'].set_visible(False)
+            plt.gca().spines['right'].set_visible(False)
+            plt.gca().spines['bottom'].set_visible(False)
+            plt.gca().axhline(y=0, lw=1, c='k', alpha=1, zorder=-1)
 
-                    x = (i * 4 + j * 2 + k) * w + (i * 3 + j + 1) * pad
-                    y = l * h + pad * 2 + titlepad
-                    canvas.paste(plots[model_type][run_type][metric_type][search_type], (x, y))
+            if atlas_type == 'Language':
+                if eval_type == 'sim':
+                    ylim = (-0.22, 0.42)
+                else:
+                    ylim = (-1.4, 4.2)
+            else:
+                ylim = None
 
-    canvas.resize((_W, _H)).save('plot_search.png')
+            for a, atlas in enumerate(atlases):
+                df = pd.read_csv(
+                    EVAL_PATH.format(parcellation_type=parcellation_name, runK=runK, atlas=atlas, eval_type=eval_type)
+                )
+                ref = 'ref_%s' % atlas
+                for k, key in enumerate(('FC',)):
+                    _x = plot_x_base + (a * 2 + k) * x_delta
+                    _df = df[df.label == key][EVALS]
+                    if FISHER and eval_type == 'sim':
+                        _df = np.arctanh(_df * (1 - EPS))
+                    _y = _df.mean(axis=0)
+                    _y_err = _df.sem(axis=0)
+                    _c = [tuple(np.array(CLASS2COLOR[EVAL2CLASS[e]]) / 255) for e in EVALS]
+                    linewidth = 1
+                    if key == 'FC':
+                        label = '%s (FC)' % REFERENCE2NAME[atlas]
+                        color = _c
+                        edgecolor = _c
+                        if atlas == 'LANG':
+                            linestyle = 'dotted'
+                        else:
+                            linestyle = '-'
+                    else:
+                        label = '%s (group)' % REFERENCE2NAME[atlas]
+                        color = 'none'
+                        edgecolor = _c
+                        if atlas == 'LANG':
+                            linestyle = 'dotted'
+                        else:
+                            linestyle = '-'
+
+                    plt.bar(
+                        _x,
+                        _y,
+                        yerr=_y_err,
+                        label=label,
+                        width=x_delta,
+                        capsize=0,
+                        color=color,
+                        edgecolor=edgecolor,
+                        ecolor=edgecolor,
+                        linestyle=linestyle,
+                        linewidth=linewidth,
+                        error_kw=dict(linewidth=linewidth),
+                        zorder=0
+                    )
+            tick_shift = x_delta * (len(atlases) - 0.5)
+            plt.xticks([])
+            if eval_type == 'sim':
+                ylabel = 'z(r)'
+            else:
+                ylabel = '$t$-value'
+            if ylim is not None:
+                plt.ylim(ylim)
+            if not os.path.exists('plots'):
+                os.makedirs('plots')
+            plt.gcf().set_size_inches(2, 2)
+            plt.tight_layout()
+            plt.savefig(f'plots/performance_{parcellation_type}_{atlas_type}_{eval_type}_axis{SUFFIX}', dpi=DPI)
+            plt.gca().get_yaxis().set_visible(False)
+            plt.gca().spines['left'].set_visible(False)
+            plt.tight_layout()
+            plt.savefig(f'plots/performance_{parcellation_type}_{atlas_type}_{eval_type}{SUFFIX}', dpi=DPI)
+            plt.close('all')
+
+
+
+
+

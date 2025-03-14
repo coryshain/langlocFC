@@ -37,9 +37,10 @@ if __name__ == '__main__':
             dfs[i] = pd.DataFrame(dfs[i])
 
         nii = None
+        functionals = None
         predicted = None
-        nii_filenames = None
-        resid_filenames = None
+        unresidualized_filenames = None
+        residualized_filenames = None
         fitted = False
         for fc, cfg in zip(fc_all, cfg_all):
             with open(cfg, 'r') as f:
@@ -86,8 +87,8 @@ if __name__ == '__main__':
                 ):
                     if kwarg in data_cfg:
                         kwargs[kwarg] = data_cfg[kwarg]
-                kwargs['low_pass'] = 0.1
-                kwargs['high_pass'] = 0.01
+                kwargs['low_pass'] = None
+                kwargs['high_pass'] = None
                 data = InputData(**kwargs)
                 mask_img = image.new_img_like(data.nii_ref, data.mask)
                 nii = [data.unflatten(x) for x in data.functionals]
@@ -96,23 +97,32 @@ if __name__ == '__main__':
                     minimize_memory=False
                 )
                 firstlevel.fit(nii, events=dfs)
-                predicted = firstlevel.predicted
+                functionals = [
+                    data.bandpass(image.get_data(x)[data.mask], lower=0.01, upper=0.1) for x in data.functionals
+                ]
+                predicted = [
+                    data.bandpass(image.get_data(x)[data.mask], lower=0.01, upper=0.1) for x in firstlevel.predicted
+                ]
+                residuals = [x - y for x, y in zip(functionals, predicted)]
+                functionals = [data.unflatten(x) for x in functionals]
+                predicted = [data.unflatten(x) for x in predicted]
+                residuals = [data.unflatten(x) for x in residuals]
 
-                nii_filenames = []
-                for ix, _nii in enumerate(nii):
+                unresidualized_filenames = []
+                for ix, _nii in enumerate(functionals):
                     nii_dir = os.path.join(results_dir, 'data', sess_name)
                     if not os.path.exists(nii_dir):
                         os.makedirs(nii_dir)
                     filename = os.path.join(nii_dir, 'func_unresidualized_%d.nii.gz' % (ix + 1))
-                    nii_filenames.append(filename)
+                    unresidualized_filenames.append(filename)
                     _nii.to_filename(filename)
-                resid_filenames = []
-                for ix, _nii in enumerate(firstlevel.residuals):
+                residualized_filenames = []
+                for ix, _nii in enumerate(residuals):
                     nii_dir = os.path.join(results_dir, 'data', sess_name)
                     if not os.path.exists(nii_dir):
                         os.makedirs(nii_dir)
                     filename = os.path.join(nii_dir, 'func_residualized_%d.nii.gz' % (ix + 1))
-                    resid_filenames.append(filename)
+                    residualized_filenames.append(filename)
                     _nii.to_filename(filename)
                 fitted = True
 
@@ -120,7 +130,7 @@ if __name__ == '__main__':
             network_sel = image.get_data(network).astype(bool)
             nii_in = []
             nii_pred = []
-            for _nii_in, _nii_pred in zip(nii, predicted):
+            for _nii_in, _nii_pred in zip(functionals, predicted):
                 _nii_in = image.get_data(_nii_in)[network_sel]
                 _nii_in = standardize_array(_nii_in)
                 nii_in.append(_nii_in)
@@ -155,7 +165,7 @@ if __name__ == '__main__':
                 fc_zR_sem=fc_sem
             )])
             _cfg['output_dir'] = os.path.join(parcellate_output_dir, 'unresidualized', sess_name)
-            _cfg['sample'][sample_id]['functional_paths'] = nii_filenames
+            _cfg['sample'][sample_id]['functional_paths'] = unresidualized_filenames
             parcellate_cfg_dir = os.path.join(results_dir, 'parcellate_cfg', 'unresidualized')
             if not os.path.exists(parcellate_cfg_dir):
                 os.makedirs(parcellate_cfg_dir)
@@ -163,7 +173,7 @@ if __name__ == '__main__':
             with open(_cfg_path, 'w') as f:
                 yaml.safe_dump(_cfg, f)
             _cfg['output_dir'] = os.path.join(parcellate_output_dir, 'residualized')
-            _cfg['sample'][sample_id]['functional_paths'] = resid_filenames
+            _cfg['sample'][sample_id]['functional_paths'] = residualized_filenames
             parcellate_cfg_dir = os.path.join(results_dir, 'parcellate_cfg', 'residualized')
             if not os.path.exists(parcellate_cfg_dir):
                 os.makedirs(parcellate_cfg_dir)
