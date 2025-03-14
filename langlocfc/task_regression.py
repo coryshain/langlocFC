@@ -172,7 +172,7 @@ if __name__ == '__main__':
             _cfg_path = os.path.join(parcellate_cfg_dir, '%s_unresidualized.yml' % sess_name)
             with open(_cfg_path, 'w') as f:
                 yaml.safe_dump(_cfg, f)
-            _cfg['output_dir'] = os.path.join(parcellate_output_dir, 'residualized')
+            _cfg['output_dir'] = os.path.join(parcellate_output_dir, 'residualized', sess_name)
             _cfg['sample'][sample_id]['functional_paths'] = residualized_filenames
             parcellate_cfg_dir = os.path.join(results_dir, 'parcellate_cfg', 'residualized')
             if not os.path.exists(parcellate_cfg_dir):
