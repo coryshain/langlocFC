@@ -98,7 +98,7 @@ if __name__ == '__main__':
                 )
                 firstlevel.fit(nii, events=dfs)
                 functionals = [
-                    data.bandpass(image.get_data(x)[data.mask], lower=0.01, upper=0.1) for x in data.functionals
+                    data.bandpass(x, lower=0.01, upper=0.1) for x in data.functionals
                 ]
                 predicted = [
                     data.bandpass(image.get_data(x)[data.mask], lower=0.01, upper=0.1) for x in firstlevel.predicted
