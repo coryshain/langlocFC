@@ -3,7 +3,7 @@ import math
 import yaml
 
 
-CFG_PATH = '../../parcellate/cfg/'
+CFG_PATH = '../parcellate/cfg/'
 NSEARCH = 100
 
 def process_cfg(path, run_type, search_type):

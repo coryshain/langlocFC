@@ -1,10 +1,19 @@
+import sys
 import os
 import re
 import pandas as pd
 import argparse
 
+try:
+    with open('data_path.txt', 'r') as f:
+        base_path = f.read().strip()
+except FileNotFoundError:
+    sys.stderr.write('Data path not set. Run `python -m langlocfc.set_data_path` before running any other scripts.\n')
+    sys.stderr.flush()
+    exit()
+
 session_match = re.compile(r'SUBJECTS/([^\/]+)/')
-results_dir = '/nese/mit/group/evlab/u/cshain/results/fMRI_parcellate/derivatives/nolangloc'
+results_dir = os.path.join('derivatives', 'nolangloc')
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser('Get brain plots for the best (highest even-odd sp corr) sessions in the dataset.')

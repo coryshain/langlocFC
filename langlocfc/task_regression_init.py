@@ -32,7 +32,16 @@ if __name__ == '__main__':
 
     task = 'Lang_S-N'
     network = 'LANA_sub1'
-    results_dir = '/nese/mit/group/evlab/u/cshain/results/fMRI_parcellate/derivatives/task_regression'
+    try:
+        with open('data_path.txt', 'r') as f:
+            base_path = f.read().strip()
+    except FileNotFoundError:
+        sys.stderr.write(
+            'Data path not set. Run `python -m langlocfc.set_data_path` before running any other scripts.\n')
+        sys.stderr.flush()
+        exit()
+
+    results_dir = os.path.join(base_path, 'derivatives', 'task_regression')
 
     # Collect unique langloc SPM.mat files
     spm_paths = set()

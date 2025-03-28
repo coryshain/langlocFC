@@ -1,3 +1,4 @@
+import sys
 import os
 import re
 import copy
@@ -27,7 +28,16 @@ if __name__ == '__main__':
     config_dir = args.config_dir
     runs_by_subject = {}
 
-    evo = pd.read_csv('/nese/mit/group/evlab/u/cshain/results/fMRI_parcellate/derivatives/stability_nolangloc/SvN_even_vs_odd.csv')
+    try:
+        with open('data_path.txt', 'r') as f:
+            base_path = f.read().strip()
+    except FileNotFoundError:
+        sys.stderr.write(
+            'Data path not set. Run `python -m langlocfc.set_data_path` before running any other scripts.\n')
+        sys.stderr.flush()
+        exit()
+
+    evo = pd.read_csv(os.path.join(base_path, 'derivatives', 'stability_nolangloc', 'SvN_even_vs_odd.csv'))
     evo.subject = evo.subject.astype(str)
     
     for experiment in ('nolangloc',):

@@ -7,8 +7,15 @@ import pandas as pd
 from nilearn import image, masking
 import argparse
 
-MULTISESSION_DIR = '/nese/mit/group/evlab/u/cshain/results/fMRI_parcellate/derivatives/nolangloc_multisession'
-RESULTS_DIR = '/nese/mit/group/evlab/u/cshain/results/fMRI_parcellate/derivatives/stability_runs'
+try:
+    with open('data_path.txt', 'r') as f:
+        base_path = f.read().strip()
+except FileNotFoundError:
+    sys.stderr.write('Data path not set. Run `python -m langlocfc.set_data_path` before running any other scripts.\n')
+    sys.stderr.flush()
+    exit()
+MULTISESSION_DIR = os.path.join(base_path, 'derivatives', 'nolangloc_multisession')
+RESULTS_DIR = os.path.join(base_path, 'derivatives', 'stability_runs')
 REFERENCE_ATLASES = ['LANG', 'LANA']
 
 if __name__ == '__main__':

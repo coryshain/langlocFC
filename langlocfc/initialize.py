@@ -12,6 +12,14 @@ import h5py
 from scipy import io
 import argparse
 
+try:
+    with open('data_path.txt', 'r') as f:
+        base_path = f.read().strip()
+except FileNotFoundError:
+    sys.stderr.write('Data path not set. Run `python -m langlocfc.set_data_path` before running any other scripts.\n')
+    sys.stderr.flush()
+    exit()
+
 SESSION_RE = re.compile('(\d+)_.+_PL2017$')
 MODELFILES_RE = re.compile('.*modelfiles_(.+).cfg')
 SUBJECTS_DIR = os.path.join(os.sep, 'nese', 'mit', 'group', 'evlab', 'u', 'Shared', 'SUBJECTS')
@@ -79,7 +87,7 @@ FUNC_SUBDIR = os.path.join('Parcellate', 'func')
 DELIM_RE = re.compile('[ \t,]+')
 EXPT_NAMES = list(pd.read_csv('evlab_expts.csv').Experiment.unique())
 CONFIG_OUT_DIR = 'cfg'
-RESULTS_DIR = os.path.join('..', 'results', 'fMRI_parcellation', 'derivatives')
+RESULTS_DIR = os.path.join(base_path, 'derivatives')
 N_NETWORKS = 10
 MAX_NETWORKS = 200
 GRID_STEP = 10
@@ -225,7 +233,7 @@ if __name__ == '__main__':
     argparser = argparse.ArgumentParser('Initialize the fMRI parcellation experiment (data and configs).')
     argparser.add_argument('-m', '--use_mask', action='store_true', help='Use session-specific mask (else, use nilearn grey matter template).')
     argparser.add_argument('-n', '--dry_run', action='store_true', help='Simulate execution without actually creating or changing any files')
-    argparser.add_argument('-c', '--config_dir', default='../../parcellate/cfg', help='Directory in which to dump config files')
+    argparser.add_argument('-c', '--config_dir', default='../parcellate/cfg', help='Directory in which to dump config files')
     args = argparser.parse_args()
 
     s = 0

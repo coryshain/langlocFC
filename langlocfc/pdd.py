@@ -1,3 +1,4 @@
+import sys
 import os
 import numpy as np
 import pandas as pd
@@ -26,9 +27,17 @@ for parcel in os.listdir('pdd_parcels'):
 
 out = []
 
+try:
+    with open('data_path.txt', 'r') as f:
+        base_path = f.read().strip()
+except FileNotFoundError:
+    sys.stderr.write('Data path not set. Run `python -m langlocfc.set_data_path` before running any other scripts.\n')
+    sys.stderr.flush()
+    exit()
+
 for subject in subjects:
     subject_dir = os.path.join('/', 'nese', 'mit', 'group', 'evlab', 'u', 'Shared', 'SUBJECTS', subject)
-    parcellation_dir = os.path.join('/', 'nese', 'mit', 'group', 'evlab', 'u', 'cshain', 'results', 'fMRI_parcellation', 'derivatives', parcellation_type, subject, 'parcellation', 'main')
+    parcellation_dir = os.path.join(base_path, 'derivatives', parcellation_type, subject, 'parcellation', 'main')
     if not os.path.exists(parcellation_dir):
         print('Parcellation dir not found: %s' % parcellation_dir)
         continue

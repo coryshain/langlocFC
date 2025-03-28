@@ -1,8 +1,17 @@
+import sys
 import os
 import pandas as pd
 
-tc_path = '/nese/mit/group/evlab/u/cshain/results/fMRI_parcellate/derivatives/task_regression/task_corr/'
-out_path = '/nese/mit/group/evlab/u/cshain/results/fMRI_parcellate/derivatives/task_regression/task_corr.csv'
+try:
+    with open('data_path.txt', 'r') as f:
+        base_path = f.read().strip()
+except FileNotFoundError:
+    sys.stderr.write('Data path not set. Run `python -m langlocfc.set_data_path` before running any other scripts.\n')
+    sys.stderr.flush()
+    exit()
+
+tc_path = os.path.join(base_path, 'derivatives', 'task_regression', 'task_corr')
+out_path = os.path.join(base_path, 'derivatives', 'task_regression', 'task_corr.csv')
 
 df = []
 for path in os.listdir(tc_path):

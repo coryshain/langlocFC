@@ -9,9 +9,17 @@ import argparse
 
 sys.path.append('parcellate')
 
-TASK_REGRESSION_DIR = '/nese/mit/group/evlab/u/cshain/results/fMRI_parcellate/derivatives/task_regression'
+try:
+    with open('data_path.txt', 'r') as f:
+        base_path = f.read().strip()
+except FileNotFoundError:
+    sys.stderr.write('Data path not set. Run `python -m langlocfc.set_data_path` before running any other scripts.\n')
+    sys.stderr.flush()
+    exit()
+
+TASK_REGRESSION_DIR = os.path.join(base_path, 'derivatives', 'task_regression')
 PARCELLATE_CFG_DIR = os.path.join(TASK_REGRESSION_DIR, 'parcellate_cfg')
-PARCELLATE_DIR = '/nese/mit/group/evlab/u/cshain/results/fMRI_parcellate/derivatives'
+PARCELLATE_DIR = os.path.join(base_path, 'derivatives')
 REFERENCE_ATLASES = ['LANG', 'LANA']
 
 if __name__ == '__main__':

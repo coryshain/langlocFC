@@ -3,7 +3,9 @@
 This repository contains reproduction code for the analyses reported in Shain & Fedorenko (2025).
 The entire analysis can only be fully reproduced by people with internal access to Fedorenko lab
 files due to consent restrictions on the raw data. However, much of the code can still be run on
-the publicly available parcellation data (https://openneuro.org/datasets/ds006071).
+the publicly available parcellation data (https://openneuro.org/datasets/ds006071). This codebase
+assumes that the parcellation data has been downloaded to the path `../../results/fMRI_parcellate`
+relative to the root of this repository.
 
 ## Installation
 
@@ -29,6 +31,18 @@ the root of this repository. Usage for individual scripts can be viewed by runni
 with the `--help` flag.
 
 ### Initialization and Preprocessing
+
+The first script that must be run before all others sets the data paths interactively:
+
+```bash
+python -m langlocfc.set_data_path
+```
+
+Note that both this codebase and the `parcellate` config files assume that this repository,
+the `parcellate` repository
+([https://github.com/coryshain/parcellate](https://github.com/coryshain/parcellate)), and
+the parcellation results (downloaded from Open Neuro) are all siblings in a shared parent
+directory. Deviations from this structure may require changes to code or configuration files.
 
 The main analyses are initialized by a script (`initialize.py`) that crawls a lab-internal data 
 directory, locates relevant metadata, and compiles it into a single configuragion (`*.yml` 

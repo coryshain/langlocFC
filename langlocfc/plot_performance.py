@@ -1,3 +1,4 @@
+import sys
 import os
 import pandas as pd
 import numpy as np
@@ -6,7 +7,15 @@ from matplotlib import pyplot as plt
 plt.rcParams["font.family"] = "Arial"
 plt.rcParams["font.size"] = 14
 
-PARCELLATE_PATH = '../../results/fMRI_parcellate/derivatives'
+try:
+    with open('data_path.txt', 'r') as f:
+        base_path = f.read().strip()
+except FileNotFoundError:
+    sys.stderr.write('Data path not set. Run `python -m langlocfc.set_data_path` before running any other scripts.\n')
+    sys.stderr.flush()
+    exit()
+
+PARCELLATE_PATH = os.path.join(base_path, 'derivatives')
 REF_PATH = (f'{PARCELLATE_PATH}/{{parcellation_type}}/plots/performance/'
              f'{{atlas}}_sub1_ref_sim.csv')
 CORR_PATH = f'{PARCELLATE_PATH}/stability_{{parcellation_type}}/between_networks.csv'

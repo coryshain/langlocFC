@@ -36,7 +36,14 @@ RUN_EVEN_VS_ODD = False
 RUN_WITHIN_SUBECTS = False
 RUN_BETWEEN_SUBJECTS = False
 RUN_BETWEEN_NETWORKS = True
-RESULTS_DIR = '/nese/mit/group/evlab/u/cshain/results/fMRI_parcellate/derivatives/stability'
+try:
+    with open('data_path.txt', 'r') as f:
+        base_path = f.read().strip()
+except FileNotFoundError:
+    sys.stderr.write('Data path not set. Run `python -m langlocfc.set_data_path` before running any other scripts.\n')
+    sys.stderr.flush()
+    exit()
+RESULTS_DIR = os.path.join('derivatives', 'stability')
 
 def get_rtype(nii, rtype='raw'):
     if rtype == 'raw':
