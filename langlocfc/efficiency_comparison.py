@@ -7,8 +7,8 @@ import pandas as pd
 from nilearn import image, masking
 import argparse
 
-MULTISESSION_DIR = '/nese/mit/group/evlab/u/cshain/results/fMRI_parcellate/nolangloc_multisession'
-RESULTS_DIR = '/nese/mit/group/evlab/u/cshain/results/fMRI_parcellate/stability_runs'
+MULTISESSION_DIR = '/nese/mit/group/evlab/u/cshain/results/fMRI_parcellate/derivatives/nolangloc_multisession'
+RESULTS_DIR = '/nese/mit/group/evlab/u/cshain/results/fMRI_parcellate/derivatives/stability_runs'
 REFERENCE_ATLASES = ['LANG', 'LANA']
 
 if __name__ == '__main__':

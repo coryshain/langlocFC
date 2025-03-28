@@ -1,8 +1,8 @@
 import os
 import pandas as pd
 
-tc_path = '/nese/mit/group/evlab/u/cshain/results/fMRI_parcellate/task_regression/task_corr/'
-out_path = '/nese/mit/group/evlab/u/cshain/results/fMRI_parcellate/task_regression/task_corr.csv'
+tc_path = '/nese/mit/group/evlab/u/cshain/results/fMRI_parcellate/derivatives/task_regression/task_corr/'
+out_path = '/nese/mit/group/evlab/u/cshain/results/fMRI_parcellate/derivatives/task_regression/task_corr.csv'
 
 df = []
 for path in os.listdir(tc_path):

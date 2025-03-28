@@ -36,7 +36,7 @@ RUN_EVEN_VS_ODD = False
 RUN_WITHIN_SUBECTS = False
 RUN_BETWEEN_SUBJECTS = False
 RUN_BETWEEN_NETWORKS = True
-RESULTS_DIR = '/nese/mit/group/evlab/u/cshain/results/fMRI_parcellate/stability'
+RESULTS_DIR = '/nese/mit/group/evlab/u/cshain/results/fMRI_parcellate/derivatives/stability'
 
 def get_rtype(nii, rtype='raw'):
     if rtype == 'raw':

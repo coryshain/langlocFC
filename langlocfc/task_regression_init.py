@@ -32,7 +32,7 @@ if __name__ == '__main__':
 
     task = 'Lang_S-N'
     network = 'LANA_sub1'
-    results_dir = '/nese/mit/group/evlab/u/cshain/results/fMRI_parcellate/task_regression'
+    results_dir = '/nese/mit/group/evlab/u/cshain/results/fMRI_parcellate/derivatives/task_regression'
 
     # Collect unique langloc SPM.mat files
     spm_paths = set()

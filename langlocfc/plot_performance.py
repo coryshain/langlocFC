@@ -6,7 +6,7 @@ from matplotlib import pyplot as plt
 plt.rcParams["font.family"] = "Arial"
 plt.rcParams["font.size"] = 14
 
-PARCELLATE_PATH = '../../results/fMRI_parcellate'
+PARCELLATE_PATH = '../../results/fMRI_parcellate/derivatives'
 REF_PATH = (f'{PARCELLATE_PATH}/{{parcellation_type}}/plots/performance/'
              f'{{atlas}}_sub1_ref_sim.csv')
 CORR_PATH = f'{PARCELLATE_PATH}/stability_{{parcellation_type}}/between_networks.csv'
@@ -15,7 +15,7 @@ EVAL_PATH = (f'{PARCELLATE_PATH}/{{parcellation_type}}/plots/performance/'
 GRID_PATH = (f'{PARCELLATE_PATH}/{{parcellation_type}}/plots/grid/'
              f'{{atlas}}_sub1_{{eval_type}}_grid.csv')
 STABILITY_DIR = f'{PARCELLATE_PATH}/stability_{{parcellation_type}}/'
-PARCELLATION_TYPES = ['nolangloc', 'nonlinguistic', 'residualized', 'unresidualized']
+PARCELLATION_TYPES = ['nolangloc', 'nonlinguistic', 'unresidualized', 'residualized', 'residualizedRand']
 EVAL_TYPES = ['sim', 'contrast']
 ATLAS_TYPES = {
     'Language': ['LANG', 'LANA'],
@@ -383,7 +383,10 @@ for parcellation_type in PARCELLATION_TYPES:
                     else:
                         ylim = (-0.15, 0.4)
                 else:
-                    ylim = (-0.7, 3.2)
+                    if 'residualized' in parcellation_type:
+                        ylim = (-0.7, 3.9)
+                    else:
+                        ylim = (-0.7, 3.2)
             else:
                 ylim = None
 

@@ -4,7 +4,7 @@ import pandas as pd
 import argparse
 
 session_match = re.compile(r'SUBJECTS/([^\/]+)/')
-results_dir = '/nese/mit/group/evlab/u/cshain/results/fMRI_parcellate/nolangloc'
+results_dir = '/nese/mit/group/evlab/u/cshain/results/fMRI_parcellate/derivatives/nolangloc'
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser('Get brain plots for the best (highest even-odd sp corr) sessions in the dataset.')
