@@ -11,8 +11,9 @@ for path in os.listdir(tc_path):
     df.append(pd.read_csv(os.path.join(tc_path, path)))
 
 df = pd.concat(df)
-mean = df[['task_zR', 'fc_zR']].mean()
-sem = df[['task_zR', 'fc_zR']].sem()
+cols = ['task_zR', 'fc_zR', 'task2res_zR', 'fcres_zR']
+mean = df[cols].mean()
+sem = df[cols].sem()
 sem = sem.rename(lambda x: x + '_sem')
 
 df = pd.concat([mean, sem]).to_csv(out_path)

@@ -36,15 +36,20 @@ if __name__ == '__main__':
         sys.stderr.write('\rProcessing %d/%d' % (i + 1, len(sessions)))
         sys.stderr.flush()
         unresidualized_cfg = os.path.join(
-            PARCELLATE_DIR, 'unresidualized', 'unresidualized', sess_name, 'config.yml'
+            PARCELLATE_DIR, 'unresidualized', sess_name, 'config.yml'
         )
         residualized_cfg = os.path.join(
-            PARCELLATE_DIR, 'residualized', 'residualized', sess_name, 'config.yml'
+            PARCELLATE_DIR, 'residualized', sess_name, 'config.yml'
+        )
+        residualizedRand_cfg = os.path.join(
+            PARCELLATE_DIR, 'residualizedRand', sess_name, 'config.yml'
         )
         with open(unresidualized_cfg, 'r') as f:
             unresidualized_cfg = yaml.safe_load(f)
         with open(residualized_cfg, 'r') as f:
             residualized_cfg = yaml.safe_load(f)
+        with open(residualizedRand_cfg, 'r') as f:
+            residualizedRand_cfg = yaml.safe_load(f)
 
         row = dict(session=sess_name)
         if args.output_dir:
@@ -58,9 +63,15 @@ if __name__ == '__main__':
                 os.path.basename(os.path.dirname(residualized_cfg['output_dir'])),
                 os.path.basename(residualized_cfg['output_dir'])
             )
+            residualizedRand_output_dir = os.path.join(
+                args.output_dir,
+                os.path.basename(os.path.dirname(residualizedRand_cfg['output_dir'])),
+                os.path.basename(residualizedRand_cfg['output_dir'])
+            )
         else:
             unresidualized_output_dir = unresidualized_cfg['output_dir']
             residualized_output_dir = residualized_cfg['output_dir']
+            residualizedRand_output_dir = residualizedRand_cfg['output_dir']
         for ref in REFERENCE_ATLASES:
             unresidualized = image.load_img(
                 os.path.join(
@@ -72,15 +83,29 @@ if __name__ == '__main__':
                     residualized_output_dir, 'parcellation', 'main', '%s_sub1.nii.gz' % ref
                 )
             )
+            residualizedRand = image.load_img(
+                os.path.join(
+                    residualizedRand_output_dir, 'parcellation', 'main', '%s_sub1.nii.gz' % ref
+                )
+            )
             if mask is None:
                 mask = image.get_data(
                     masking.compute_brain_mask(unresidualized, connected=False, opening=False, mask_type='gm')) > 0.5
             unresidualized = image.get_data(unresidualized)[mask]
             residualized = image.get_data(residualized)[mask]
+            residualizedRand = image.get_data(residualizedRand)[mask]
             r = np.corrcoef(unresidualized, residualized)[0, 1]
             if args.fisher:
                 r = np.arctanh(r * (1 - eps))
-            row['%s_r' % ref] = r
+            row['%s_r_unresidualized2residualized' % ref] = r
+            r = np.corrcoef(unresidualized, residualizedRand)[0, 1]
+            if args.fisher:
+                r = np.arctanh(r * (1 - eps))
+            row['%s_r_unresidualized2residualizedRand' % ref] = r
+            r = np.corrcoef(residualized, residualizedRand)[0, 1]
+            if args.fisher:
+                r = np.arctanh(r * (1 - eps))
+            row['%s_r_residualized2residualizedRand' % ref] = r
         df.append(row)
 
     print()
