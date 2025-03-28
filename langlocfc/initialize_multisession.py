@@ -27,7 +27,7 @@ if __name__ == '__main__':
     config_dir = args.config_dir
     runs_by_subject = {}
 
-    evo = pd.read_csv('/nese/mit/group/evlab/u/cshain/results/fMRI_parcellate/stability_nolangloc/SvN_even_vs_odd.csv')
+    evo = pd.read_csv('/nese/mit/group/evlab/u/cshain/results/fMRI_parcellate/derivatives/stability_nolangloc/SvN_even_vs_odd.csv')
     evo.subject = evo.subject.astype(str)
     
     for experiment in ('nolangloc',):

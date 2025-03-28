@@ -8,34 +8,18 @@ plt.rcParams["font.family"] = "Arial"
 plt.rcParams["font.size"] = 14
 
 PARCELLATE_PATH = '../../results/fMRI_parcellate/derivatives'
-REF_PATH = (f'{PARCELLATE_PATH}/{{parcellation_type}}/plots/{{runK}}performance/'
+REF_PATH = (f'{PARCELLATE_PATH}/{{parcellation_type}}/{{plot_type}}/performance/'
              f'{{atlas}}_sub1_ref_sim.csv')
-CORR_PATH = f'{PARCELLATE_PATH}/stability_runs/multisession_stability_summary_LANA.csv'
-EVAL_PATH = (f'{PARCELLATE_PATH}/{{parcellation_type}}/plots/{{runK}}performance/'
+EVAL_PATH = (f'{PARCELLATE_PATH}/{{parcellation_type}}/{{plot_type}}/performance/'
              f'{{atlas}}_sub1_eval_{{eval_type}}.csv')
-GRID_PATH = (f'{PARCELLATE_PATH}/{{parcellation_type}}/plots/grid/'
-             f'{{atlas}}_sub1_{{eval_type}}_grid.csv')
-STABILITY_DIR = f'{PARCELLATE_PATH}/stability_{{parcellation_type}}/'
 PARCELLATION_TYPES = [
-    'nolanglocSearchBpTimecourse',
-    'nolanglocSearchConnDownsample',
-    'nolanglocSearchConnDownsampleBin',
-    'nolanglocSearchConnRegions',
-    'nolanglocSearchConnRegionsBin',
-    'nolanglocSearchNobpTimecourse',
-    'nonlinguisticSearchBpTimecourse',
-    'nonlinguisticSearchConnDownsample',
-    'nonlinguisticSearchConnDownsampleBin',
-    'nonlinguisticSearchConnRegions',
-    'nonlinguisticSearchConnRegionsBin',
-    'nonlinguisticSearchNobpTimecourse'
+    'nolangloc'
 ]
 EVAL_TYPES = ['sim', 'contrast']
-ATLAS_TYPES = {
-    'Language': ['LANG', 'LANA'],
-}
+ATLAS_TYPES = ['LANG', 'LANA', 'Lang_S-N']
+
 EVALS = [
-    'Lang_S-N', 'Lang_I-D', 'ToM_bel-pho', 'ToM_NV_ment-phys', 'SpatWM_H-E', 'Math_H-E',
+    'Lang_S-N', 'Lang_I-D', 'ToM_bel-pho', 'ToM_NV_ment-phys', 'SpatWM_H-E', 'Math_H-E', 'Music_I-B',
     'Vis_Faces-Objects', 'Vis_Bodies-Objects', 'Vis_Scenes-Objects'
 ]
 EVAL_CLASSES = ['Language', 'Theory of Mind', 'Executive', 'Music', 'Vision']
@@ -76,6 +60,7 @@ ALL_REFERENCE = [
     'LANA',
 ]
 REFERENCE2NAME = {
+    'Lang_S-N': 'Oracle',
     'LANG': 'LANG',
     'LANA': 'LanA',
     'FPN_A': 'FPN-A',
@@ -98,20 +83,6 @@ FISHER = True
 EPS = 1e-3
 DPI = 200
 
-# Correlations
-df = pd.read_csv(CORR_PATH)
-df = df.set_index('runK')
-df = df.rename(int, axis=1)
-df = np.tanh(df)
-
-sns.heatmap(df)
-plt.xlabel('N Runs')
-plt.ylabel('N Runs')
-plt.gcf().set_size_inches(3.5, 2.9)
-plt.tight_layout()
-plt.savefig(f'plots/runwise_correlations{SUFFIX}', dpi=DPI)
-plt.close('all')
-
 for parcellation_type in PARCELLATION_TYPES:
     if 'multisession' in parcellation_type:
         runK = parcellation_type[-2:] + '/'
@@ -120,11 +91,13 @@ for parcellation_type in PARCELLATION_TYPES:
         runK = ''
         parcellation_name = parcellation_type
     for atlas_type in ATLAS_TYPES:
-        # atlases = ATLAS_TYPES[atlas_type]
-        atlases = ['LANA']
+        atlases = [atlas_type]
+        if atlas_type == 'Lang_S-N':
+            plot_type = 'oracle_plots'
+        else:
+            plot_type = 'plots'
 
         # Evaluation atlases
-        # x_delta = 0.8 / (len(atlases) * 2)
         x_delta = 0.8
         for eval_type in EVAL_TYPES:
             plot_x_base = np.arange(len(EVALS))
@@ -133,17 +106,16 @@ for parcellation_type in PARCELLATION_TYPES:
             plt.gca().spines['bottom'].set_visible(False)
             plt.gca().axhline(y=0, lw=1, c='k', alpha=1, zorder=-1)
 
-            if atlas_type == 'Language':
-                if eval_type == 'sim':
-                    ylim = (-0.22, 0.42)
-                else:
-                    ylim = (-1.4, 4.2)
+            if eval_type == 'sim':
+                ylim = (-0.12, 0.4)
             else:
-                ylim = None
+                ylim = (-1, 3.3)
 
             for a, atlas in enumerate(atlases):
                 df = pd.read_csv(
-                    EVAL_PATH.format(parcellation_type=parcellation_name, runK=runK, atlas=atlas, eval_type=eval_type)
+                    EVAL_PATH.format(
+                        parcellation_type=parcellation_name, plot_type=plot_type, atlas=atlas, eval_type=eval_type
+                    )
                 )
                 ref = 'ref_%s' % atlas
                 for k, key in enumerate(('FC',)):
@@ -159,10 +131,7 @@ for parcellation_type in PARCELLATION_TYPES:
                         label = '%s (FC)' % REFERENCE2NAME[atlas]
                         color = _c
                         edgecolor = _c
-                        if atlas == 'LANG':
-                            linestyle = 'dotted'
-                        else:
-                            linestyle = '-'
+                        linestyle = '-'
                     else:
                         label = '%s (group)' % REFERENCE2NAME[atlas]
                         color = 'none'
@@ -199,11 +168,11 @@ for parcellation_type in PARCELLATION_TYPES:
                 os.makedirs('plots')
             plt.gcf().set_size_inches(2, 2)
             plt.tight_layout()
-            plt.savefig(f'plots/performance_{parcellation_type}_{atlas_type}_{eval_type}_axis{SUFFIX}', dpi=DPI)
+            plt.savefig(f'plots/performance_oracle_{atlas_type}_{eval_type}_axis{SUFFIX}', dpi=DPI)
             plt.gca().get_yaxis().set_visible(False)
             plt.gca().spines['left'].set_visible(False)
             plt.tight_layout()
-            plt.savefig(f'plots/performance_{parcellation_type}_{atlas_type}_{eval_type}{SUFFIX}', dpi=DPI)
+            plt.savefig(f'plots/performance_oracle_{atlas_type}_{eval_type}{SUFFIX}', dpi=DPI)
             plt.close('all')
 
 

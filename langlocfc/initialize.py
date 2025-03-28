@@ -79,20 +79,12 @@ FUNC_SUBDIR = os.path.join('Parcellate', 'func')
 DELIM_RE = re.compile('[ \t,]+')
 EXPT_NAMES = list(pd.read_csv('evlab_expts.csv').Experiment.unique())
 CONFIG_OUT_DIR = 'cfg'
-RESULTS_DIR = os.path.join('..', 'results', 'fMRI_parcellation')
-N_NETWORKS = 2
-MAX_NETWORKS = 100
-N_ENSEMBLE = 10
-N_SAMPLES = 256
-N_SAMPLES_FINAL = 256
-N_ALIGNMENTS = 512
-HIGH_PASS = 0.01
-LOW_PASS = 0.1
-#EVAL_TYPE = 'con'
+RESULTS_DIR = os.path.join('..', 'results', 'fMRI_parcellation', 'derivatives')
+N_NETWORKS = 10
+MAX_NETWORKS = 200
+GRID_STEP = 10
 EVAL_TYPE = 'spmT'
 CONFIG_NAMES = [
-    'all',
-    'onlylangloc',
     'nolangloc',
     'nonlinguistic'
 ]
@@ -370,13 +362,10 @@ if __name__ == '__main__':
                     'sample': {
                         'main': {
                             'functional_paths': [],
-                            'n_samples': N_SAMPLES,
-                            'high_pass': HIGH_PASS,
-                            'low_pass': LOW_PASS,
                         }
                     },
                     'align': {
-                        'main': {'n_alignments': N_ALIGNMENTS}
+                        'main': {}
                     },
                     'label': {
                         'main': {'reference_atlases': 'all'}
@@ -388,10 +377,10 @@ if __name__ == '__main__':
                         'main': {'subnetwork_id': 1}
                     },
                     'parcellate': {
-                        'main': {'sample': {'n_samples': N_SAMPLES_FINAL}}
+                        'main': {}
                     },
                     'grid': {
-                        'n_networks': [[2, 100]]
+                        'n_networks': [[N_NETWORKS, MAX_NETWORKS + 1, 10]]
                     }
                 }
         

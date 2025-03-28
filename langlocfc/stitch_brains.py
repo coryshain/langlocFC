@@ -107,9 +107,11 @@ if __name__ == '__main__':
 
             # Get runs and TRs
             sample_id = None
+            k = None
             for action in action_sequence:
                 if action['type'] == 'sample':
                     sample_id = action['id']
+                    k = action['kwargs']['n_networks']
                     break
             assert sample_id, 'sample_id not found'
             metadata_path = os.path.join(
@@ -181,7 +183,7 @@ if __name__ == '__main__':
             W = height
             H = font_sub_size
             txt_score = Image.new('RGB', (W, H), color=(255, 255, 255))
-            txt_score_text = 'sim=%0.2f' % sim
+            txt_score_text = 'k=%d, sim=%0.2f' % (k, sim)
             draw = ImageDraw.Draw(txt_score)
             _, _, w, h = draw.textbbox((0, 0), txt_score_text, font=font_sub)
             draw.text(

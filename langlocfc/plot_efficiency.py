@@ -7,7 +7,7 @@ import seaborn as sns
 plt.rcParams["font.family"] = "Arial"
 plt.rcParams["font.size"] = 14
 
-PARCELLATE_PATH = '../../results/fMRI_parcellate'
+PARCELLATE_PATH = '../../results/fMRI_parcellate/derivatives'
 REF_PATH = (f'{PARCELLATE_PATH}/{{parcellation_type}}/plots/{{runK}}performance/'
              f'{{atlas}}_sub1_ref_sim.csv')
 CORR_PATH = f'{PARCELLATE_PATH}/stability_runs/multisession_stability_summary_LANA.csv'

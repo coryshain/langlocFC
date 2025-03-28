@@ -9,9 +9,9 @@ import argparse
 
 sys.path.append('parcellate')
 
-TASK_REGRESSION_DIR = '/nese/mit/group/evlab/u/cshain/results/fMRI_parcellate/task_regression'
+TASK_REGRESSION_DIR = '/nese/mit/group/evlab/u/cshain/results/fMRI_parcellate/derivatives/task_regression'
 PARCELLATE_CFG_DIR = os.path.join(TASK_REGRESSION_DIR, 'parcellate_cfg')
-PARCELLATE_DIR = '/nese/mit/group/evlab/u/cshain/results/fMRI_parcellate'
+PARCELLATE_DIR = '/nese/mit/group/evlab/u/cshain/results/fMRI_parcellate/derivatives'
 REFERENCE_ATLASES = ['LANG', 'LANA']
 
 if __name__ == '__main__':

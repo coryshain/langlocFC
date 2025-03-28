@@ -28,7 +28,7 @@ out = []
 
 for subject in subjects:
     subject_dir = os.path.join('/', 'nese', 'mit', 'group', 'evlab', 'u', 'Shared', 'SUBJECTS', subject)
-    parcellation_dir = os.path.join('/', 'nese', 'mit', 'group', 'evlab', 'u', 'cshain', 'results', 'fMRI_parcellation', parcellation_type, subject, 'parcellation', 'main')
+    parcellation_dir = os.path.join('/', 'nese', 'mit', 'group', 'evlab', 'u', 'cshain', 'results', 'fMRI_parcellation', 'derivatives', parcellation_type, subject, 'parcellation', 'main')
     if not os.path.exists(parcellation_dir):
         print('Parcellation dir not found: %s' % parcellation_dir)
         continue
