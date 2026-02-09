@@ -13,7 +13,7 @@ except FileNotFoundError:
     exit()
 
 session_match = re.compile(r'SUBJECTS/([^\/]+)/')
-results_dir = os.path.join('derivatives', 'nolangloc')
+results_dir = os.path.join(base_path, 'derivatives', 'nolangloc')
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser('Get brain plots for the best (highest even-odd sp corr) sessions in the dataset.')

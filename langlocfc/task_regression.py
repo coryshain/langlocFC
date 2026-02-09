@@ -25,6 +25,7 @@ if __name__ == '__main__':
         spm_path = cfg_tr['spm_path']
         sess_name = cfg_tr['sess_name']
         results_dir = cfg_tr['results_dir']
+        data_dir = cfg_tr['data_dir']
         parcellate_output_dir = cfg_tr['parcellate_output_dir']
         output_dir = cfg_tr['output_dir']
         sample_id = cfg_tr['sample_id']
@@ -33,15 +34,12 @@ if __name__ == '__main__':
         cfg_all = cfg_tr['cfg_all']
         run_seq = cfg_tr['run_seq']
         dfs = cfg_tr['dfs']
-        dfs_rand = []
         for i in range(len(dfs)):
             dfs[i] = pd.DataFrame(dfs[i])
-            _df = dfs[i].copy()
-            _df.trial_type = np.random.permutation(_df.trial_type)
-            dfs_rand.append(_df)
 
         nii = None
         functionals = None
+        residuals = None
         predicted = None
         unresidualized_filenames = None
         residualized_filenames = None
@@ -109,22 +107,17 @@ if __name__ == '__main__':
                     minimize_memory=False
                 )
                 firstlevel = glm.first_level.FirstLevelModel(**firstlevel_kwargs)
-                firstlevel_rand = glm.first_level.FirstLevelModel(**firstlevel_kwargs)
                 for i in range(len(dfs)):
                     dfs[i].onset = dfs[i].onset * data_cfg.get('tr', 2)
                     dfs[i].duration = dfs[i].duration * data_cfg.get('tr', 2)
-                    dfs_rand[i].onset = dfs_rand[i].onset * data_cfg.get('tr', 2)
-                    dfs_rand[i].duration = dfs_rand[i].duration * data_cfg.get('tr', 2)
                 firstlevel.fit(functionals, events=dfs)
-                firstlevel_rand.fit(functionals, events=dfs_rand)
 
                 predicted = firstlevel.predicted
                 residuals = firstlevel.residuals
-                residuals_rand = firstlevel_rand.residuals
 
                 unresidualized_filenames = []
                 for ix, _nii in enumerate(functionals):
-                    nii_dir = os.path.join(results_dir, 'data', sess_name)
+                    nii_dir = os.path.join(data_dir, 'data', sess_name)
                     if not os.path.exists(nii_dir):
                         os.makedirs(nii_dir)
                     filename = os.path.join(nii_dir, 'func_unresidualized_%d.nii.gz' % (ix + 1))
@@ -132,19 +125,11 @@ if __name__ == '__main__':
                     _nii.to_filename(filename)
                 residualized_filenames = []
                 for ix, _nii in enumerate(residuals):
-                    nii_dir = os.path.join(results_dir, 'data', sess_name)
+                    nii_dir = os.path.join(data_dir, 'data', sess_name)
                     if not os.path.exists(nii_dir):
                         os.makedirs(nii_dir)
                     filename = os.path.join(nii_dir, 'func_residualized_%d.nii.gz' % (ix + 1))
                     residualized_filenames.append(filename)
-                    _nii.to_filename(filename)
-                residualized_rand_filenames = []
-                for ix, _nii in enumerate(residuals_rand):
-                    nii_dir = os.path.join(results_dir, 'data', sess_name)
-                    if not os.path.exists(nii_dir):
-                        os.makedirs(nii_dir)
-                    filename = os.path.join(nii_dir, 'func_residualizedRand_%d.nii.gz' % (ix + 1))
-                    residualized_rand_filenames.append(filename)
                     _nii.to_filename(filename)
 
                 _cfg['output_dir'] = os.path.join(parcellate_output_dir, 'unresidualized', sess_name)
@@ -163,31 +148,6 @@ if __name__ == '__main__':
                 _cfg_path = os.path.join(parcellate_cfg_dir, '%s_residualized.yml' % sess_name)
                 with open(_cfg_path, 'w') as f:
                     yaml.safe_dump(_cfg, f)
-                _cfg['output_dir'] = os.path.join(parcellate_output_dir, 'residualizedRand', sess_name)
-                _cfg['sample'][sample_id]['functional_paths'] = residualized_rand_filenames
-                parcellate_cfg_dir = os.path.join(results_dir, 'parcellate_cfg', 'residualizedRand')
-                if not os.path.exists(parcellate_cfg_dir):
-                    os.makedirs(parcellate_cfg_dir)
-                _cfg_path = os.path.join(parcellate_cfg_dir, '%s_residualizedRand.yml' % sess_name)
-                with open(_cfg_path, 'w') as f:
-                    yaml.safe_dump(_cfg, f)
-
-#                functionals = [
-#                    #data.unflatten(standardize_array(detrend_array(data.bandpass(image.get_data(x)[data.mask], tr=data.tr, lower=0.01, upper=0.1)))) for x in functionals
-#                    image.get_data(x)[data.mask] for x in functionals
-#                ]
-#                predicted = [
-#                    #data.unflatten(standardize_array(detrend_array(data.bandpass(image.get_data(x)[data.mask], tr=data.tr, lower=0.01, upper=0.1)))) for x in predicted
-#                    image.get_data(x)[data.mask] for x in predicted
-#                ]
-#                residuals = [
-#                    #data.unflatten(standardize_array(detrend_array(data.bandpass(image.get_data(x)[data.mask], tr=data.tr, lower=0.01, upper=0.1)))) for x in residuals
-#                    image.get_data(x)[data.mask] for x in residuals
-#                ]
-#                residuals_rand = [
-#                    #data.unflatten(standardize_array(detrend_array(data.bandpass(image.get_data(x)[data.mask], tr=data.tr, lower=0.01, upper=0.1)))) for x in residuals_rand
-#                    image.get_data(x)[data.mask] for x in residuals_rand
-#                ]
                 
                 fitted = True
 
