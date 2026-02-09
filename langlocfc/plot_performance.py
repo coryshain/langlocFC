@@ -4,8 +4,11 @@ import pandas as pd
 import numpy as np
 from matplotlib import pyplot as plt
 
+FONTSIZE = 18
+LEGEND_FONTSIZE = 10
+
 plt.rcParams["font.family"] = "Arial"
-plt.rcParams["font.size"] = 14
+plt.rcParams["font.size"] = FONTSIZE
 
 try:
     with open('data_path.txt', 'r') as f:
@@ -24,7 +27,7 @@ EVAL_PATH = (f'{PARCELLATE_PATH}/{{parcellation_type}}/plots/performance/'
 GRID_PATH = (f'{PARCELLATE_PATH}/{{parcellation_type}}/plots/grid/'
              f'{{atlas}}_sub1_{{eval_type}}_grid.csv')
 STABILITY_DIR = f'{PARCELLATE_PATH}/stability_{{parcellation_type}}/'
-PARCELLATION_TYPES = ['nolangloc', 'nonlinguistic', 'unresidualized', 'residualized', 'residualizedRand']
+PARCELLATION_TYPES = ['nolangloc', 'nonlinguistic', 'unresidualized', 'residualized']
 EVAL_TYPES = ['sim', 'contrast']
 ATLAS_TYPES = {
     'Language': ['LANG', 'LANA'],
@@ -181,19 +184,18 @@ for parcellation_type in PARCELLATION_TYPES:
                     zorder=0
                 )
         tick_shift = x_delta * (2 - 0.5)
-        plt.xticks(plot_x_base + tick_shift, ['Within', 'Between'], rotation=45, ha='right')
+        plt.xticks(plot_x_base + tick_shift, ['Within', 'Between'], rotation=45, ha='right', rotation_mode='anchor')
         ylabel = 'z(r)'
         plt.ylabel(ylabel)
         if ylim is not None:
             plt.ylim(ylim)
-        plt.legend(bbox_to_anchor=(0.5, 1), loc='lower center', ncol=2, frameon=False, fontsize=12)
+        plt.legend(bbox_to_anchor=(0.5, 1), loc='lower center', ncol=2, frameon=False, fontsize=18)
         if not os.path.exists('plots'):
             os.makedirs('plots')
-        plt.gcf().set_size_inches(4, 4)
+        plt.gcf().set_size_inches(6, 4)
         plt.tight_layout()
         plt.savefig(f'plots/stability_within_between{SUFFIX}', dpi=DPI)
         plt.close('all')
-
 
     # Grid n voxels
     if parcellation_type in ('nolangloc', 'nonlinguistic'):
@@ -254,6 +256,8 @@ for parcellation_type in PARCELLATION_TYPES:
         atlases = ATLAS_TYPES[atlas_type]
 
         # FC atlases
+
+        plt.rcParams["font.size"] = 16
         if parcellation_type in ('nolangloc', 'nonlinguistic'):
             plot_x_base = np.arange(len(ALL_REFERENCE))
             plt.gca().spines['top'].set_visible(False)
@@ -302,12 +306,12 @@ for parcellation_type in PARCELLATION_TYPES:
                 )
 
             tick_shift = x_delta * (len(atlases) - 0.5) / 2
-            plt.xticks(plot_x_base + tick_shift, [REFERENCE2NAME[x] for x in ALL_REFERENCE], rotation=45, ha='right')
+            plt.xticks(plot_x_base + tick_shift, [REFERENCE2NAME[x] for x in ALL_REFERENCE], rotation=45, ha='right', rotation_mode='anchor')
             ylabel = 'z(r)'
             plt.ylabel(ylabel)
             if ylim is not None:
                 plt.ylim(ylim)
-            plt.legend(bbox_to_anchor=(0.5, 1), loc='lower center', ncol=4, frameon=False, fontsize=12)
+            plt.legend(bbox_to_anchor=(0.5, 1), loc='lower center', ncol=4, frameon=False, fontsize=14)
             if not os.path.exists('plots'):
                 os.makedirs('plots')
             plt.gcf().set_size_inches(6, 4.5)
@@ -363,12 +367,12 @@ for parcellation_type in PARCELLATION_TYPES:
             )
 
         tick_shift = x_delta * (len(atlases) - 0.5) / 2
-        plt.xticks(plot_x_base + tick_shift, [REFERENCE2NAME[x] for x in ALL_REFERENCE], rotation=45, ha='right')
+        plt.xticks(plot_x_base + tick_shift, [REFERENCE2NAME[x] for x in ALL_REFERENCE], rotation=45, ha='right', rotation_mode='anchor')
         ylabel = 'z(r)'
         plt.ylabel(ylabel)
         if ylim is not None:
             plt.ylim(ylim)
-        plt.legend(bbox_to_anchor=(0.5, 1), loc='lower center', ncol=4, frameon=False, fontsize=12)
+        plt.legend(bbox_to_anchor=(0.5, 1), loc='lower center', ncol=4, frameon=False, fontsize=16)
         if not os.path.exists('plots'):
             os.makedirs('plots')
         plt.gcf().set_size_inches(6, 4.5)
@@ -376,8 +380,11 @@ for parcellation_type in PARCELLATION_TYPES:
         plt.savefig(f'plots/performance_{parcellation_type}_{atlas_type}_refsim{SUFFIX}', dpi=DPI)
         plt.close('all')
 
+        plt.rcParams["font.size"] = FONTSIZE
+
 
         # Evaluation atlases
+        plt.rcParams["font.size"] = 22
         x_delta = 0.8 / (len(atlases) * 2)
         for eval_type in EVAL_TYPES:
             plot_x_base = np.arange(len(EVALS))
@@ -446,7 +453,10 @@ for parcellation_type in PARCELLATION_TYPES:
                         zorder=0
                     )
             tick_shift = x_delta * (len(atlases) - 0.5)
-            plt.xticks(plot_x_base + tick_shift, [EVAL2NAME[eval] for eval in EVALS], rotation=45, ha='right')
+            tick_colors = [tuple(np.array(CLASS2COLOR[EVAL2CLASS[e]]) / 255) for e in EVALS]
+            plt.xticks(plot_x_base + tick_shift, [EVAL2NAME[eval] for eval in EVALS], rotation=60, ha='right', rotation_mode='anchor', fontsize=22)
+            for xtick, c_ in zip(plt.gca().get_xticklabels(), tick_colors):
+                xtick.set_color(c_)
             if eval_type == 'sim':
                 ylabel = 'z(r)'
             else:
@@ -454,7 +464,7 @@ for parcellation_type in PARCELLATION_TYPES:
             plt.ylabel(ylabel)
             if ylim is not None:
                 plt.ylim(ylim)
-            plt.legend(bbox_to_anchor=(0.5, 1), loc='lower center', ncol=4, frameon=False, fontsize=12)
+            plt.legend(bbox_to_anchor=(0.5, 1), loc='lower center', ncol=4, frameon=False, fontsize=LEGEND_FONTSIZE)
             legend = plt.gca().get_legend()
             for i in range(len(legend.legend_handles)):
                 facecolor = legend.legend_handles[i].get_facecolor()
@@ -463,14 +473,9 @@ for parcellation_type in PARCELLATION_TYPES:
                 legend.legend_handles[i].set_edgecolor((0.2, 0.2, 0.2))
             if not os.path.exists('plots'):
                 os.makedirs('plots')
-            plt.gcf().set_size_inches(7, 5.25)
+            plt.gcf().set_size_inches(7, 8)
             plt.tight_layout()
             plt.savefig(f'plots/performance_{parcellation_type}_{atlas_type}_{eval_type}{SUFFIX}', dpi=DPI)
             plt.close('all')
 
-        # Grid
-
-
-
-
-
+        plt.rcParams["font.size"] = FONTSIZE

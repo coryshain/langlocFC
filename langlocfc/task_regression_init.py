@@ -1,3 +1,4 @@
+import sys
 import os
 from pymatreader import read_mat
 import yaml
@@ -42,6 +43,7 @@ if __name__ == '__main__':
         exit()
 
     results_dir = os.path.join(base_path, 'derivatives', 'task_regression')
+    data_dir = os.path.join(base_path + '_data', 'derivatives', 'task_regression')
 
     # Collect unique langloc SPM.mat files
     spm_paths = set()
@@ -139,6 +141,7 @@ if __name__ == '__main__':
             spm_path=spm_path,
             sess_name=sess_name,
             results_dir=results_dir,
+            data_dir=data_dir,
             output_dir=args.output_dir,
             parcellate_output_dir=args.parcellate_output_dir,
             sample_id=args.sample_id,

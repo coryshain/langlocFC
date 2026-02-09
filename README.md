@@ -123,14 +123,14 @@ To compute plot data for across-sessions bar plots, run the following from the r
 `parcellate` repository:
 
 ```bash
-python -m parcellate.plot <CONFIG_PATHS> -o <OUTPUT_PATH> -D
+python -m parcellate.bin.plot <CONFIG_PATHS> -o <OUTPUT_PATH> -D
 ```
 
 and to compute line plots over parcellation granularities `k`, run the following from the root
 of the `parcellate` repository:
 
 ```bash
-python -m parcellate.plot <CONFIG_PATHS> -t grid -o <OUTPUT_PATH> -D
+python -m parcellate.bin.plot <CONFIG_PATHS> -t grid -o <OUTPUT_PATH> -D
 ```
 
 where `<CONFIG_PATHS>` is a list of paths to configuration files for each session you want to
