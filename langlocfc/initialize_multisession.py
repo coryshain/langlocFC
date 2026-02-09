@@ -108,6 +108,8 @@ if __name__ == '__main__':
 
         for i, subject in enumerate(subjects_sorted):
             cfg = cfg_by_subject[subject]
+            print(subject, len(cfg['sample']['main']['functional_paths']))
+            continue
             del cfg['score']
             del cfg['grid']
             if 'aggregate' in cfg:

@@ -22,7 +22,7 @@ except FileNotFoundError:
 
 SESSION_RE = re.compile('(\d+)_.+_PL2017$')
 MODELFILES_RE = re.compile('.*modelfiles_(.+).cfg')
-SUBJECTS_DIR = os.path.join(os.sep, 'nese', 'mit', 'group', 'evlab', 'u', 'Shared', 'SUBJECTS')
+SUBJECTS_DIR = os.path.join(os.sep, 'orcd', 'archive', 'evelina9', '001', 'u', 'Shared', 'SUBJECTS')
 SESSIONS = [x for x in os.listdir(SUBJECTS_DIR) if SESSION_RE.match(x)]
 SESSIONS = sorted(SESSIONS, key=lambda x: int(SESSION_RE.match(x).group(1)))
 df = pd.read_csv('evlab_experiments_2024-06-18.csv')[['Experiment', 'Alternative Names', 'ExperimentType', 'Nonlinguistic']].to_dict('records')
