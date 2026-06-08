@@ -112,6 +112,12 @@ for parcel_type in parcel_types:
             linestyle='dashed',
             color='red',
         )
+        source = pd.DataFrame({
+            'length:': clens,
+            'condition': ['Real-word'] * len(clens),
+            'effect': means,
+            'sem': errs
+        })
 
         _df = df[df.StimType == 'J']
         clens = [1, 4, 12]
@@ -155,6 +161,13 @@ for parcel_type in parcel_types:
             linestyle='dashed',
             color='blue'
         )
+
+        source = pd.concat([source, pd.DataFrame({
+            'length:': clens,
+            'condition': ['Jabberwocky'] * len(clens),
+            'effect': means,
+            'sem': errs
+        })], axis=0)
 
         _df = df[df.StimType == 'N']
         clens = [3, 4]
@@ -200,6 +213,13 @@ for parcel_type in parcel_types:
             color='m'
         )
 
+        source = pd.concat([source, pd.DataFrame({
+            'length:': clens,
+            'condition': ['Non-constituent'] * len(clens),
+            'effect': means,
+            'sem': errs
+        })], axis=0)
+
         plt.subplots_adjust(left=0.3)
         plt.xlim(plot_basis.min() - 0.2, plot_basis.max() + 0.2)
 
@@ -209,9 +229,10 @@ for parcel_type in parcel_types:
         for ylim_key in ylims:
             ylim = ylims[ylim_key]
             plt.ylim(ylim)
-            plt.savefig(os.path.join(plot_dir, 'PDD_nlength2%s_%s_plot%s.png' % (parcel_str, ROI, ylim_key)),
+            plt.savefig(os.path.join(plot_dir, 'PDD_nlength2%s_%s_plot%s.pdf' % (parcel_str, ROI, ylim_key)),
                         dpi=300)
         plt.close('all')
+        source.to_csv(os.path.join(plot_dir, 'PDD_nlength2%s_%s_plot%s.csv' % (parcel_str, ROI, ylim_key)), index=False)
 
 
 

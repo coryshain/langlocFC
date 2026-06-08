@@ -72,9 +72,11 @@ regions = [
 
 
 _fROI, _FC, _ROI = fROI[fROI.ROI.isin(regions)], FC[FC.ROI.isin(regions)], ROI[ROI.ROI.isin(regions)]
+t_fROI_v_FC = stats.ttest_ind(_fROI.NLenC, _FC.NLenC)
 print('=' * 50)
 print('  fROI vs FC, NLenC:      beta: %.3f,' % (_fROI.NLenC.mean() - _FC.NLenC.mean()),
-      stats.ttest_ind(_fROI.NLenC, _FC.NLenC))
+        t_fROI_v_FC, '95%% CI: %s' % str(t_fROI_v_FC.confidence_interval()))
 print()
+t_FC_v_ROI = stats.ttest_ind(_FC.NLenC, _ROI.NLenC)
 print('  FC vs ROI, NLenC:       beta: %.3f,' % (_FC.NLenC.mean() - _ROI.NLenC.mean()),
-      stats.ttest_ind(_FC.NLenC, _ROI.NLenC))
+      t_FC_v_ROI, '95%% CI: %s' % str(t_FC_v_ROI.confidence_interval()))

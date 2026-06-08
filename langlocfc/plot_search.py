@@ -101,7 +101,7 @@ REFERENCE2NAME = {
     'VIS_C': 'VIS-C',
     'VIS_P': 'VIS-P',
 }
-SUFFIX = '.png'
+SUFFIX = '.pdf'
 FISHER = True
 EPS = 1e-3
 DPI = 200
@@ -143,12 +143,15 @@ for parcellation_type in PARCELLATION_TYPES:
 
             if atlas_type == 'Language':
                 if eval_type == 'sim':
-                    ylim = (-0.22, 0.42)
+                    # ylim = (-0.22, 0.42)
+                    ylim = (-0.4, 0.7)
                 else:
-                    ylim = (-1.4, 4.2)
+                    # ylim = (-1.4, 4.2)
+                    ylim = (-3, 6)
             else:
                 ylim = None
 
+            source = []
             for a, atlas in enumerate(atlases):
                 df = pd.read_csv(
                     EVAL_PATH.format(parcellation_type=parcellation_name, runK=runK, atlas=atlas, eval_type=eval_type)
@@ -159,13 +162,17 @@ for parcellation_type in PARCELLATION_TYPES:
                     _df = df[df.label == key][EVALS]
                     if FISHER and eval_type == 'sim':
                         _df = np.arctanh(_df * (1 - EPS))
+                    source.append(_df.reset_index(drop=True))
+                    _y_all = _df.values
+                    _y_all = [_y_all[:, i][~np.isnan(_y_all[:, i])] for i in range(_y_all.shape[1])]
                     _y = _df.mean(axis=0)
                     _y_err = _df.sem(axis=0)
                     _c = [tuple(np.array(CLASS2COLOR[EVAL2CLASS[e]]) / 255) for e in EVALS]
                     linewidth = 1
                     if key == 'FC':
                         label = '%s (FC)' % REFERENCE2NAME[atlas]
-                        color = _c
+                        # color = _c
+                        color = 'none'
                         edgecolor = _c
                         if atlas == 'LANG':
                             linestyle = 'dotted'
@@ -195,6 +202,19 @@ for parcellation_type in PARCELLATION_TYPES:
                         error_kw=dict(linewidth=linewidth),
                         zorder=0
                     )
+
+                    for i in range(len(_y)):
+                        plt.scatter(
+                            np.random.random(len(_y_all[i])) * x_delta * 0.5 + _x[i] - x_delta * 0.5 / 2,
+                            _y_all[i],
+                            s=0.2,
+                            alpha=0.2,
+                            color=edgecolor[i],
+                            zorder=1
+                        )
+
+            source = pd.concat(source, axis=1)
+
             tick_shift = x_delta * (len(atlases) - 0.5)
             plt.xticks([])
             if eval_type == 'sim':
@@ -211,8 +231,10 @@ for parcellation_type in PARCELLATION_TYPES:
             plt.gca().get_yaxis().set_visible(False)
             plt.gca().spines['left'].set_visible(False)
             plt.tight_layout()
+            print(f'plots/performance_{parcellation_type}_{atlas_type}_{eval_type}{SUFFIX}')
             plt.savefig(f'plots/performance_{parcellation_type}_{atlas_type}_{eval_type}{SUFFIX}', dpi=DPI)
             plt.close('all')
+            source.to_csv(f'plots/performance_{parcellation_type}_{atlas_type}_{eval_type}.csv', index=False)
 
 
 
