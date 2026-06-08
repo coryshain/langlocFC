@@ -4,6 +4,7 @@ import yaml
 import numpy as np
 import pandas as pd
 from nilearn import image, masking
+import nibabel
 try:
     import importlib.resources as pkg_resources
 except ImportError:
@@ -120,7 +121,11 @@ if __name__ == '__main__':
                 sess = os.path.basename(cfg['output_dir'])
 
             if nii_path not in path2nii and os.path.exists(nii_path):
-                nii = image.load_img(nii_path)
+                try:
+                    nii = image.load_img(nii_path)
+                except nibabel.filebasedimages.ImageFileError as e:
+                    print(e)
+                    continue
                 nii = image.get_data(nii)[mask]
                 path2nii[nii_path] = nii
             if setname not in nii_paths:
@@ -203,10 +208,7 @@ if __name__ == '__main__':
         between_subjects = []
         for setname in ('Lang_S-N', 'LANG', 'LANA'):
             subjects = list(nii_paths[setname].keys())
-            row = dict(
-                setname=setname,
-                n_subj=len(subjects)
-            )
+            _between_subjects = pd.DataFrame()
             for rtype in RTYPES:
                 averaged_statmaps = {}
                 for subject in nii_paths[setname]:
@@ -214,25 +216,32 @@ if __name__ == '__main__':
                     niis = {}
                     for nii in nii_paths[setname][subject]:
                         niis[nii['path']] = nii
-                    niis = list(niis.values())
-                    averaged_statmaps[subject] = [
-                        np.stack(
-                            [get_rtype(path2nii[x['path']], rtype=rtype) for x in niis],
-                            axis=-1
-                        ).mean(axis=-1)
-                    ]
+                    niis = [x for x in niis.values() if os.path.exists(x['path'])]
+                    if len(niis):
+                        averaged_statmaps[subject] = [
+                            np.stack(
+                                [get_rtype(path2nii[x['path']], rtype=rtype) for x in niis],
+                                axis=-1
+                            ).mean(axis=-1)
+                        ]
                 R = []
+                spairs = []
                 for i in range(len(subjects)):
                     for j in range(i + 1, len(subjects)):
-                        r = np.corrcoef(averaged_statmaps[subjects[i]], averaged_statmaps[subjects[j]])[0, 1]
-                        if args.fisher:
-                            r = np.arctanh(r * (1 - eps))
+                        if not subjects[i] in averaged_statmaps or not subjects[j] in averaged_statmaps:
+                            r = np.nan
+                        else:
+                            r = np.corrcoef(averaged_statmaps[subjects[i]], averaged_statmaps[subjects[j]])[0, 1]
+                            if args.fisher:
+                                r = np.arctanh(r * (1 - eps))
                         R.append(r)
+                        spairs.append('%s-%s' % (subjects[i], subjects[j]))
                 R = pd.Series(R)
-                row['r_%s' % rtype] = R.mean()
-                row['r_%s_sem' % rtype] = R.sem()
-            between_subjects.append(row)
-        between_subjects = pd.DataFrame(between_subjects)
+                _between_subjects['r_%s' % rtype] = R
+            _between_subjects['subjects'] = spairs
+            _between_subjects['setname'] = setname
+            between_subjects.append(_between_subjects)
+        between_subjects = pd.concat(between_subjects)
         if not os.path.exists(RESULTS_DIR):
             os.makedirs(RESULTS_DIR)
         between_subjects.to_csv(os.path.join(RESULTS_DIR, 'between_subjects.csv'), index=False)
@@ -240,6 +249,7 @@ if __name__ == '__main__':
     if RUN_BETWEEN_NETWORKS:
         print('Between networks')
         between_networks = []
+        between_networks_all = {}
         for rtype in RTYPES:
             _between_networks = pd.DataFrame(index=ALL_REFERENCE, columns=ALL_REFERENCE)
             for i in range(len(ALL_REFERENCE)):
@@ -261,27 +271,42 @@ if __name__ == '__main__':
                             if not isinstance(_between_networks.loc[network2, network1], list):
                                 _between_networks.loc[network2, network1] = []
                             _between_networks.loc[network2, network1].append(r)
+
             between_networks_mean  = pd.DataFrame(index=ALL_REFERENCE, columns=ALL_REFERENCE)
             between_networks_sem = pd.DataFrame(index=ALL_REFERENCE, columns=ALL_REFERENCE)
+            _between_networks_all = {
+                network: pd.DataFrame(columns=ALL_REFERENCE) for network in ALL_REFERENCE
+            }
             for i in range(len(ALL_REFERENCE)):
                 network1 = ALL_REFERENCE[i]
+                _between_networks_all[network1]
                 for j in range(i + 1, len(ALL_REFERENCE)):
                     network2 = ALL_REFERENCE[j]
                     r = pd.Series(_between_networks.loc[network1, network2])
+                    _between_networks_all[network1][network2] = r
+                    _between_networks_all[network2][network1] = r
                     r_mean = r.mean()
                     r_sem = r.sem()
                     between_networks_mean.loc[network1, network2] = r_mean
                     between_networks_mean.loc[network2, network1] = r_mean
                     between_networks_sem.loc[network1, network2] = r_sem
                     between_networks_sem.loc[network2, network1] = r_sem
+            for network in _between_networks_all:
+                _between_networks_all[network]['rtype'] = rtype
+                if network in between_networks_all:
+                    between_networks_all[network] = pd.concat([between_networks_all[network], _between_networks_all[network]])
+                else:
+                    between_networks_all[network] = _between_networks_all[network]
             between_networks_sem = between_networks_sem.rename(lambda x: x + '_sem', axis=1)
             _between_networks = pd.concat([between_networks_mean, between_networks_sem], axis=1)
             _between_networks['network'] = _between_networks.index
             _between_networks['rtype'] = rtype
             _between_networks = _between_networks.reset_index(drop=True)
             between_networks.append(_between_networks)
-        between_networks = pd.concat(between_networks)
         if not os.path.exists(RESULTS_DIR):
             os.makedirs(RESULTS_DIR)
+        for network in between_networks_all:
+            between_networks_all[network].to_csv(os.path.join(RESULTS_DIR, 'between_networks_all_%s.csv' % network), index=False)
+        between_networks = pd.concat(between_networks)
         between_networks.to_csv(os.path.join(RESULTS_DIR, 'between_networks.csv'), index=False)
 
